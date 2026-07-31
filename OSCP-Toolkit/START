@@ -1,0 +1,328 @@
+#!/usr/bin/env python3
+"""
+OSCP Toolkit - Double-click to start!
+Opens terminal + browser, commands flow automatically.
+"""
+
+import subprocess
+import os
+import sys
+import json
+import threading
+import time
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+from pathlib import Path
+
+# Paths
+SCRIPT_DIR = Path(__file__).parent.resolve()
+CHEATSHEETS = SCRIPT_DIR / "00-Cheatsheets"
+PORT_HTTP = 8888
+PORT_CMD = 9999
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Terminal Detection & Spawning
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def find_terminal():
+    """Find available terminal emulator"""
+    for term in ['qterminal', 'xfce4-terminal', 'gnome-terminal', 'konsole', 'mate-terminal', 'xterm']:
+        try:
+            subprocess.run(['which', term], capture_output=True, check=True)
+            return term
+        except:
+            pass
+    return None
+
+def get_next_shell_number():
+    """Get the next sequential shell number"""
+    try:
+        result = subprocess.run(
+            ['tmux', 'list-windows', '-t', 'oscp', '-F', '#{window_name}'],
+            capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            return 0
+        
+        # Find highest shell number
+        max_num = -1
+        for name in result.stdout.strip().split('\n'):
+            if name.startswith('sh'):
+                try:
+                    num = int(name[2:])
+                    max_num = max(max_num, num)
+                except:
+                    pass
+        return max_num + 1
+    except:
+        return 0
+
+def spawn_terminal_with_tmux():
+    """Open a terminal with tmux session (root shell, auto-login)"""
+    term = find_terminal()
+    if not term:
+        print("No terminal found!")
+        return False
+    
+    # Check if tmux session exists
+    result = subprocess.run(['tmux', 'has-session', '-t', 'oscp'], capture_output=True)
+    session_exists = result.returncode == 0
+    
+    if session_exists:
+        # Get next sequential shell number
+        shell_num = get_next_shell_number()
+        win_name = f"sh{shell_num}"
+        
+        # Create new window with automatic-rename disabled
+        subprocess.run(['tmux', 'new-window', '-t', 'oscp', '-n', win_name], capture_output=True)
+        subprocess.run(['tmux', 'set-window-option', '-t', f'oscp:{win_name}', 'automatic-rename', 'off'], capture_output=True)
+        time.sleep(0.2)
+        
+        # Send sudo -i
+        # subprocess.run(['tmux', 'send-keys', '-t', f'oscp:{win_name}', 'Enter'], capture_output=True)
+        # time.sleep(0.5)
+        
+        # Send password (kali)
+        # subprocess.run(['tmux', 'send-keys', '-t', f'oscp:{win_name}', 'Enter'], capture_output=True)
+        
+        # Command to attach and select the new window
+        cmd = f"tmux select-window -t 'oscp:{win_name}' && tmux attach -t oscp"
+        
+        print(f"[+] Created window: {win_name}")
+    else:
+        # Create new session with sh0, disable automatic-rename
+        cmd = "tmux new-session -s oscp -n sh0 \\; set-window-option automatic-rename off"
+        
+        # Schedule sending sudo -i and password
+        # def send_sudo_after_delay():
+        #    time.sleep(1)
+        #    subprocess.run(['tmux', 'send-keys', '-t', 'oscp:sh0', 'sudo -i', 'Enter'], capture_output=True)
+        #    time.sleep(0.5)
+        #    subprocess.run(['tmux', 'send-keys', '-t', 'oscp:sh0', 'kali', 'Enter'], capture_output=True)
+        
+        # threading.Thread(target=send_sudo_after_delay, daemon=True).start()
+        print("[+] Created session with sh0")
+    
+    # Spawn terminal with the command
+    if term == 'gnome-terminal':
+        subprocess.Popen(['gnome-terminal', '--', 'bash', '-c', f'{cmd}; exec bash'])
+    elif term == 'qterminal':
+        subprocess.Popen(['qterminal', '-e', f'bash -c "{cmd}; exec bash"'])
+    elif term == 'xfce4-terminal':
+        subprocess.Popen(['xfce4-terminal', '-e', f'bash -c "{cmd}; exec bash"'])
+    elif term == 'konsole':
+        subprocess.Popen(['konsole', '-e', 'bash', '-c', f'{cmd}; exec bash'])
+    else:
+        subprocess.Popen([term, '-e', f'bash -c "{cmd}; exec bash"'])
+    
+    return True
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Command Server (receives from webpage, sends to tmux)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def find_tmux_session():
+    """Find any tmux session"""
+    try:
+        result = subprocess.run(['tmux', 'list-sessions', '-F', '#{session_name}'], 
+                              capture_output=True, text=True, timeout=2)
+        if result.returncode == 0 and result.stdout.strip():
+            sessions = result.stdout.strip().split('\n')
+            return 'oscp' if 'oscp' in sessions else sessions[0]
+    except:
+        pass
+    return None
+
+def get_active_window(session):
+    """Get active window in session"""
+    try:
+        result = subprocess.run([
+            'tmux', 'list-windows', '-t', session,
+            '-F', '#{window_index}:#{window_name}:#{window_active}'
+        ], capture_output=True, text=True, timeout=2)
+        
+        if result.returncode == 0:
+            for line in result.stdout.strip().split('\n'):
+                parts = line.split(':')
+                if len(parts) >= 3 and parts[2] == '1':
+                    return parts[0], parts[1]
+    except:
+        pass
+    return "0", "unknown"
+
+def send_to_tmux(cmd, execute=True):
+    """Send command to active tmux window"""
+    session = find_tmux_session()
+    if not session:
+        return False, "No tmux session! Open a terminal first."
+    
+    win_idx, win_name = get_active_window(session)
+    target = f"{session}:{win_idx}"
+    
+    try:
+        subprocess.run(['tmux', 'send-keys', '-t', target, cmd], check=True, timeout=2)
+        if execute:
+            subprocess.run(['tmux', 'send-keys', '-t', target, 'Enter'], check=True, timeout=2)
+        return True, f"{session}:{win_idx}:{win_name}"
+    except Exception as e:
+        return False, str(e)
+
+class CombinedHandler(SimpleHTTPRequestHandler):
+    """Serves files AND handles command API"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=str(CHEATSHEETS), **kwargs)
+    
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+    
+    def do_POST(self):
+        # Command API
+        if self.path == '/cmd':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                cmd = data.get('cmd', '')
+                execute = data.get('execute', True)
+                
+                if cmd:
+                    success, info = send_to_tmux(cmd, execute)
+                    
+                    self.send_response(200)
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    
+                    if success:
+                        print(f"[→] {info} | {cmd[:50]}")
+                        self.wfile.write(json.dumps({'status': 'ok', 'window': info}).encode())
+                    else:
+                        self.wfile.write(json.dumps({'status': 'error', 'message': info}).encode())
+                else:
+                    self.send_error(400)
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode())
+        
+        # Spawn terminal API
+        elif self.path == '/spawn':
+            spawn_terminal_with_tmux()
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'status': 'ok'}).encode())
+        else:
+            self.send_error(404)
+    
+    def do_GET(self):
+        # Status API
+        if self.path == '/status':
+            session = find_tmux_session()
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            
+            if session:
+                win_idx, win_name = get_active_window(session)
+                self.wfile.write(json.dumps({
+                    'connected': True,
+                    'session': session,
+                    'window': f"{win_idx}:{win_name}"
+                }).encode())
+            else:
+                self.wfile.write(json.dumps({
+                    'connected': False,
+                    'message': 'No tmux session'
+                }).encode())
+        else:
+            # Serve static files
+            super().do_GET()
+    
+    def log_message(self, format, *args):
+        pass  # Quiet
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Main
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def open_browser():
+    """Open browser after short delay"""
+    time.sleep(1)
+    try:
+        subprocess.Popen(['xdg-open', f'http://localhost:{PORT_HTTP}'], 
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except:
+        pass
+
+def is_server_running():
+    """Check if server is already running on our port"""
+    import socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(('localhost', PORT_HTTP))
+        sock.close()
+        return False  # Port is free, server not running
+    except OSError:
+        return True  # Port in use, server already running
+
+def main():
+    # Check if already running
+    if is_server_running():
+        print("""
+╔═══════════════════════════════════════════════════════════════════╗
+║              OSCP Toolkit - Already Running!                      ║
+╚═══════════════════════════════════════════════════════════════════╝
+""")
+        print("[✓] Server already running on port 8888")
+        print("[+] Opening browser...")
+        subprocess.Popen(['xdg-open', f'http://localhost:{PORT_HTTP}'], 
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        print("[+] Spawning new terminal window...")
+        spawn_terminal_with_tmux()
+        print("\nDone! You can close this window.")
+        return
+    
+    # Normal startup
+    print("""
+╔═══════════════════════════════════════════════════════════════════╗
+║              OSCP Toolkit                                         ║
+╠═══════════════════════════════════════════════════════════════════╣
+║  Browser: http://localhost:8888                                   ║
+║  Commands go to your active tmux window                           ║
+║  All shells start as ROOT (sudo -i)                               ║
+╚═══════════════════════════════════════════════════════════════════╝
+""")
+    
+    # Spawn terminal with tmux + root shell
+    print("[+] Opening terminal with root shell...")
+    spawn_terminal_with_tmux()
+    
+    # Open browser
+    print("[+] Opening browser...")
+    threading.Thread(target=open_browser, daemon=True).start()
+    
+    # Start server
+    print(f"[+] Server running on port {PORT_HTTP}")
+    print("\nPress Ctrl+C to stop\n" + "─" * 60)
+    
+    server = HTTPServer(('localhost', PORT_HTTP), CombinedHandler)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nStopped.")
+        server.shutdown()
+
+if __name__ == '__main__':
+    main()
+

