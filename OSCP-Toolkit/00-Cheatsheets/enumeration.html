@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enumeration - OSCP Toolkit</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🔍 Enumeration</h1>
+            <nav>
+                <a href="index.html">Home</a>
+                <a href="quickcmds.html">⚡ Quick Cmds</a>
+                <a href="tools.html">🛠️ Tools</a>
+                <a href="reverse_shells.html">Shells</a>
+                <a href="enumeration.html" class="active">Enumeration</a>
+                <a href="privesc_linux.html">Linux PrivEsc</a>
+                <a href="privesc_windows.html">Windows PrivEsc</a>
+                <a href="buffer_overflow.html">Buffer Overflow</a>
+                <a href="transfer_files.html">File Transfer</a>
+                <a href="pivoting.html">Pivoting</a>
+                <a href="checklist.html">Checklist</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="toc">
+            <h3>📑 Quick Navigation</h3>
+            <ul>
+                <li><a href="#host-discovery">Host Discovery</a></li>
+                <li><a href="#port-scanning">Port Scanning</a></li>
+                <li><a href="#ftp">FTP (21)</a></li>
+                <li><a href="#ssh">SSH (22)</a></li>
+                <li><a href="#smtp">SMTP (25)</a></li>
+                <li><a href="#dns">DNS (53)</a></li>
+                <li><a href="#http">HTTP/S (80/443)</a></li>
+                <li><a href="#smb">SMB (139/445)</a></li>
+                <li><a href="#snmp">SNMP (161)</a></li>
+                <li><a href="#ldap">LDAP (389)</a></li>
+                <li><a href="#mssql">MSSQL (1433)</a></li>
+                <li><a href="#mysql">MySQL (3306)</a></li>
+                <li><a href="#rdp">RDP (3389)</a></li>
+                <li><a href="#winrm">WinRM (5985)</a></li>
+                <li><a href="#loot-linux">🐧 Linux Loot Hunting</a></li>
+                <li><a href="#loot-windows">🪟 Windows Loot Hunting</a></li>
+            </ul>
+        </div>
+
+        <h2 id="host-discovery">🌐 Host Discovery</h2>
+        <h3>Ping Sweep</h3>
+        <pre data-lang="bash"><code><span class="comment"># Using fping</span>
+fping -a -g 10.10.10.0/24 2>/dev/null
+
+<span class="comment"># Using nmap</span>
+nmap -sn 10.10.10.0/24 -oG - | grep "Up" | cut -d " " -f 2
+
+<span class="comment"># Using bash loop</span>
+for i in $(seq 1 254); do (ping -c 1 10.10.10.$i | grep "bytes from" &); done</code></pre>
+
+        <h2 id="port-scanning">🎯 Port Scanning</h2>
+        <h3>Nmap Quick Scans</h3>
+        <pre data-lang="bash"><code><span class="comment"># Quick TCP scan</span>
+nmap -sC -sV -oA nmap/initial TARGET
+
+<span class="comment"># Full TCP port scan</span>
+nmap -p- -sC -sV -oA nmap/full TARGET
+
+<span class="comment"># UDP scan (top 20)</span>
+nmap -sU --top-ports 20 -oA nmap/udp TARGET
+
+<span class="comment"># Aggressive scan</span>
+nmap -A -T4 TARGET
+
+<span class="comment"># Vulnerability scan</span>
+nmap --script vuln TARGET</code></pre>
+
+        <h3>Fast Scanners</h3>
+        <pre data-lang="bash"><code><span class="comment"># Rustscan (very fast)</span>
+rustscan -a TARGET -- -sC -sV
+
+<span class="comment"># Masscan</span>
+masscan -p1-65535,U:1-65535 TARGET --rate=1000 -e tun0</code></pre>
+
+        <h2 id="ftp">📂 FTP (21)</h2>
+        <pre data-lang="bash"><code><span class="comment"># Anonymous login</span>
+ftp TARGET
+> anonymous
+> anonymous
+
+<span class="comment"># Nmap scripts</span>
+nmap --script ftp-anon,ftp-bounce,ftp-vuln* -p 21 TARGET
+
+<span class="comment"># Download all files</span>
+wget -m ftp://anonymous:anonymous@TARGET
+
+<span class="comment"># Brute force</span>
+hydra -l admin -P /usr/share/wordlists/rockyou.txt ftp://TARGET</code></pre>
+
+        <h2 id="ssh">🔐 SSH (22)</h2>
+        <pre data-lang="bash"><code><span class="comment"># Banner grab</span>
+nc -nv TARGET 22
+
+<span class="comment"># Nmap scripts</span>
+nmap --script ssh2-enum-algos,ssh-hostkey,ssh-auth-methods -p 22 TARGET
+
+<span class="comment"># Brute force</span>
+hydra -l user -P /usr/share/wordlists/rockyou.txt ssh://TARGET</code></pre>
+
+        <h2 id="smtp">📧 SMTP (25)</h2>
+        <pre data-lang="bash"><code><span class="comment"># Connect</span>
+nc -nv TARGET 25
+
+<span class="comment"># User enumeration</span>
+smtp-user-enum -M VRFY -U users.txt -t TARGET
+
+<span class="comment"># Nmap scripts</span>
+nmap --script smtp-commands,smtp-enum-users,smtp-vuln* -p 25 TARGET</code></pre>
+
+        <h2 id="dns">🌍 DNS (53)</h2>
+        <pre data-lang="bash"><code><span class="comment"># Zone transfer</span>
+dig axfr @TARGET DOMAIN
+dnsrecon -d DOMAIN -t axfr
+host -l DOMAIN TARGET
+
+<span class="comment"># Enumeration</span>
+dnsenum DOMAIN
+dnsrecon -d DOMAIN -D /usr/share/wordlists/dnsmap.txt -t std</code></pre>
+
+        <h2 id="http">🌐 HTTP/HTTPS (80/443)</h2>
+        <h3>Initial Recon</h3>
+        <pre data-lang="bash"><code><span class="comment"># Identify technologies</span>
+whatweb http://TARGET
+curl -I http://TARGET
+
+<span class="comment"># Nikto scan</span>
+nikto -h http://TARGET</code></pre>
+
+        <h3>Directory Brute Force</h3>
+        <pre data-lang="bash"><code><span class="comment"># Gobuster</span>
+gobuster dir -u http://TARGET -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -x php,html,txt
+
+<span class="comment"># Feroxbuster (recursive)</span>
+feroxbuster -u http://TARGET -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt
+
+<span class="comment"># FFUF</span>
+ffuf -u http://TARGET/FUZZ -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt</code></pre>
+
+        <h3>Virtual Host Enumeration</h3>
+        <pre data-lang="bash"><code>gobuster vhost -u http://TARGET -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
+
+ffuf -u http://TARGET -H "Host: FUZZ.TARGET" -w subdomains.txt -fc 301,302</code></pre>
+
+        <h2 id="smb">📁 SMB (139/445)</h2>
+        <pre data-lang="bash"><code><span class="comment"># Enumerate shares</span>
+smbclient -L //TARGET -N
+smbmap -H TARGET
+smbmap -H TARGET -u guest
+
+<span class="comment"># Connect to share</span>
+smbclient //TARGET/share -N
+smbclient //TARGET/share -U username
+
+<span class="comment"># Enum4linux</span>
+enum4linux -a TARGET
+
+<span class="comment"># Nmap scripts</span>
+nmap --script smb-enum-shares,smb-enum-users,smb-os-discovery -p 445 TARGET
+nmap --script smb-vuln* -p 445 TARGET
+
+<span class="comment"># CrackMapExec</span>
+crackmapexec smb TARGET -u '' -p '' --shares
+crackmapexec smb TARGET -u user -p password --shares</code></pre>
+
+        <h2 id="snmp">📊 SNMP (161)</h2>
+        <pre data-lang="bash"><code><span class="comment"># Community string brute force</span>
+onesixtyone -c /usr/share/seclists/Discovery/SNMP/common-snmp-community-strings.txt TARGET
+
+<span class="comment"># Enumerate with community string</span>
+snmpwalk -c public -v1 TARGET
+snmpwalk -c public -v2c TARGET 1.3.6.1.4.1.77.1.2.25  <span class="comment"># Windows users</span>
+
+<span class="comment"># snmp-check</span>
+snmp-check TARGET -c public</code></pre>
+
+        <h2 id="ldap">📒 LDAP (389)</h2>
+        <pre data-lang="bash"><code><span class="comment"># Anonymous bind</span>
+ldapsearch -x -H ldap://TARGET -b "dc=DOMAIN,dc=com"
+
+<span class="comment"># Authenticated</span>
+ldapsearch -x -H ldap://TARGET -D "user@domain.com" -w 'password' -b "dc=DOMAIN,dc=com"
+
+<span class="comment"># Nmap</span>
+nmap -p 389 --script ldap-search TARGET</code></pre>
+
+        <h2 id="mssql">🗄️ MSSQL (1433)</h2>
+        <pre data-lang="bash"><code><span class="comment"># Nmap</span>
+nmap --script ms-sql-info,ms-sql-empty-password,ms-sql-xp-cmdshell -p 1433 TARGET
+
+<span class="comment"># Impacket</span>
+mssqlclient.py user:password@TARGET -windows-auth
+
+<span class="comment"># Enable xp_cmdshell</span>
+EXEC sp_configure 'show advanced options', 1; RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;
+EXEC xp_cmdshell 'whoami';</code></pre>
+
+        <h2 id="mysql">🐬 MySQL (3306)</h2>
+        <pre data-lang="bash"><code><span class="comment"># Connect</span>
+mysql -h TARGET -u root -p
+
+<span class="comment"># Nmap</span>
+nmap --script mysql-info,mysql-enum,mysql-empty-password -p 3306 TARGET</code></pre>
+
+        <h2 id="rdp">🖥️ RDP (3389)</h2>
+        <pre data-lang="bash"><code><span class="comment"># Nmap</span>
+nmap --script rdp-enum-encryption,rdp-vuln-ms12-020 -p 3389 TARGET
+
+<span class="comment"># Connect</span>
+rdesktop TARGET
+xfreerdp /v:TARGET /u:user /p:password</code></pre>
+
+        <h2 id="winrm">⚡ WinRM (5985/5986)</h2>
+        <pre data-lang="bash"><code><span class="comment"># Check access</span>
+crackmapexec winrm TARGET -u user -p password
+
+<span class="comment"># Connect</span>
+evil-winrm -i TARGET -u user -p password</code></pre>
+
+        <h2 id="loot-linux">🐧 Linux Loot Hunting</h2>
+        <h3>History Files</h3>
+        <pre data-lang="bash"><code><span class="comment"># Bash history</span>
+cat ~/.bash_history
+cat /home/*/.bash_history
+
+<span class="comment"># Other history files</span>
+cat ~/.zsh_history
+cat ~/.mysql_history
+cat ~/.psql_history
+
+<span class="comment"># Find all history files</span>
+find / -name "*history*" 2>/dev/null</code></pre>
+
+        <h3>Configuration & Credentials</h3>
+        <pre data-lang="bash"><code><span class="comment"># Search for passwords in configs</span>
+grep -ri "password" /etc/ 2>/dev/null
+grep -ri "password" /var/www/ 2>/dev/null
+grep -ri "pass=" . 2>/dev/null
+
+<span class="comment"># Config files with passwords</span>
+find / -name "*.conf" -exec grep -l "password" {} \; 2>/dev/null
+find / -name "wp-config.php" 2>/dev/null
+find / -name "config.php" 2>/dev/null
+find / -name "settings.py" 2>/dev/null
+
+<span class="comment"># Database files</span>
+find / -name "*.db" -o -name "*.sqlite" -o -name "*.sqlite3" 2>/dev/null
+
+<span class="comment"># Backup files (often contain creds)</span>
+find / -name "*.bak" -o -name "*.old" -o -name "*.backup" 2>/dev/null</code></pre>
+
+        <h3>SSH Keys</h3>
+        <pre data-lang="bash"><code><span class="comment"># Find private keys</span>
+find / -name "id_rsa" 2>/dev/null
+find / -name "id_ecdsa" 2>/dev/null
+find / -name "id_ed25519" 2>/dev/null
+
+<span class="comment"># Authorized keys (who can login)</span>
+find / -name "authorized_keys" 2>/dev/null
+cat ~/.ssh/*</code></pre>
+
+        <h3>Mail & Logs</h3>
+        <pre data-lang="bash"><code><span class="comment"># User mail</span>
+cat /var/mail/*
+cat /var/spool/mail/*
+
+<span class="comment"># Auth logs</span>
+cat /var/log/auth.log
+cat /var/log/secure
+
+<span class="comment"># Web logs</span>
+cat /var/log/apache2/access.log
+cat /var/log/nginx/access.log</code></pre>
+
+        <h3>User Documents</h3>
+        <pre data-lang="bash"><code><span class="comment"># Text files in home dirs</span>
+find /home -type f -name "*.txt" 2>/dev/null
+find /home -type f -name "notes*" 2>/dev/null
+find /home -type f -name "*password*" 2>/dev/null
+
+<span class="comment"># Find everything interesting</span>
+find / -type f \( -name "*.conf" -o -name "*.config" -o -name "*password*" -o -name "*history*" \) 2>/dev/null | head -50</code></pre>
+
+        <h2 id="loot-windows">🪟 Windows Loot Hunting</h2>
+        <h3>History Files</h3>
+        <pre data-lang="powershell"><code><span class="comment"># PowerShell history</span>
+type $env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+
+<span class="comment"># All users' PowerShell history</span>
+type C:\Users\*\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+
+<span class="comment"># CMD history (if session active)</span>
+doskey /history</code></pre>
+
+        <h3>Saved Credentials</h3>
+        <pre data-lang="powershell"><code><span class="comment"># Windows credential manager</span>
+cmdkey /list
+
+<span class="comment"># WiFi passwords</span>
+netsh wlan show profiles
+netsh wlan show profile name="SSID" key=clear
+
+<span class="comment"># SAM &amp; SYSTEM (requires admin)</span>
+reg save HKLM\SAM sam.bak
+reg save HKLM\SYSTEM system.bak
+
+<span class="comment"># Autologon credentials</span>
+reg query "HKLM\SOFTWARE\Microsoft\Windows NT\Currentversion\Winlogon" 2>nul | findstr "DefaultUserName DefaultDomainName DefaultPassword"</code></pre>
+
+        <h3>Unattend & Config Files</h3>
+        <pre data-lang="powershell"><code><span class="comment"># Unattend files (may have passwords)</span>
+dir /s C:\unattend.xml 2>nul
+dir /s C:\sysprep.inf 2>nul
+dir /s C:\sysprep\sysprep.xml 2>nul
+
+<span class="comment"># IIS config</span>
+type C:\inetpub\wwwroot\web.config 2>nul
+type C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Config\web.config 2>nul
+
+<span class="comment"># GPP passwords (if domain joined)</span>
+findstr /S /I cpassword \\domain\sysvol\*.xml 2>nul</code></pre>
+
+        <h3>Search for Passwords</h3>
+        <pre data-lang="powershell"><code><span class="comment"># Search in common file types</span>
+findstr /si "password" *.txt *.xml *.config *.ini
+findstr /spin "password" *.*
+
+<span class="comment"># Recursive search</span>
+findstr /s /i "password" C:\Users\*.txt C:\Users\*.xml C:\Users\*.config 2>nul
+
+<span class="comment"># Search for specific strings</span>
+findstr /si "pwd=" *.* 2>nul
+findstr /si "credential" *.* 2>nul</code></pre>
+
+        <h3>User Documents & Files</h3>
+        <pre data-lang="powershell"><code><span class="comment"># Desktop and Documents</span>
+dir /s C:\Users\*\Desktop\*.txt 2>nul
+dir /s C:\Users\*\Documents\*.txt 2>nul
+dir /s C:\Users\*\Downloads\ 2>nul
+
+<span class="comment"># Sticky notes database</span>
+dir "C:\Users\*\AppData\Local\Packages\Microsoft.MicrosoftStickyNotes_*\LocalState\plum.sqlite" 2>nul
+
+<span class="comment"># KeePass databases</span>
+dir /s *.kdbx 2>nul
+
+<span class="comment"># Recent documents</span>
+dir C:\Users\*\AppData\Roaming\Microsoft\Windows\Recent\ 2>nul</code></pre>
+
+        <h3>Browser Credentials</h3>
+        <pre data-lang="powershell"><code><span class="comment"># Chrome Login Data</span>
+dir "C:\Users\*\AppData\Local\Google\Chrome\User Data\Default\Login Data" 2>nul
+
+<span class="comment"># Firefox logins</span>
+dir "C:\Users\*\AppData\Roaming\Mozilla\Firefox\Profiles\*\logins.json" 2>nul
+
+<span class="comment"># Edge</span>
+dir "C:\Users\*\AppData\Local\Microsoft\Edge\User Data\Default\Login Data" 2>nul</code></pre>
+
+        <footer>
+            <p>OSCP Toolkit | Good luck on your exam! 🎯</p>
+        </footer>
+    </div>
+
+    <script>
+        document.querySelectorAll('pre').forEach(pre => {
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = 'Copy';
+            btn.onclick = () => {
+                navigator.clipboard.writeText(pre.querySelector('code').textContent);
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            };
+            pre.style.position = 'relative';
+            pre.appendChild(btn);
+        });
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tool Installer - OSCP Toolkit</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .installer-header {
+            background: linear-gradient(135deg, rgba(63, 185, 80, 0.15) 0%, rgba(88, 166, 255, 0.15) 100%);
+            border: 1px solid var(--accent-green);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .installer-header h2 {
+            margin: 0 0 10px 0;
+            border: none;
+            padding: 0;
+        }
+        
+        .installer-header p {
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        
+        .terminal-toggle-bar {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .terminal-toggle-bar.active {
+            border-color: var(--accent-green);
+            background: rgba(63, 185, 80, 0.1);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-tertiary);
+            transition: 0.3s;
+            border-radius: 30px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-muted);
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+        
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+            background-color: white;
+        }
+        
+        .terminal-status {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .terminal-status.connected {
+            color: var(--accent-green);
+        }
+        
+        .terminal-status.error {
+            color: var(--accent-red);
+        }
+        
+        .tool-section {
+            margin-bottom: 40px;
+        }
+        
+        .tool-section h3 {
+            color: var(--accent-primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 15px;
+        }
+        
+        .tool-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .tool-card:hover {
+            border-color: var(--accent-primary);
+        }
+        
+        .tool-card.installed {
+            border-color: var(--accent-green);
+            background: rgba(63, 185, 80, 0.05);
+        }
+        
+        .tool-card h4 {
+            margin: 0 0 8px 0;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tool-card h4 .badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+        
+        .tool-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0 0 15px 0;
+        }
+        
+        .tool-card .cmd-preview {
+            background: var(--bg-code);
+            padding: 10px;
+            border-radius: 6px;
+            font-family: 'Cascadia Code', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+            margin-bottom: 15px;
+            word-break: break-all;
+            max-height: 60px;
+            overflow: hidden;
+        }
+        
+        .tool-card .actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .tool-card .btn {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        .tool-card .btn-install {
+            background: var(--accent-green);
+            color: var(--bg-primary);
+        }
+        
+        .tool-card .btn-install:hover {
+            opacity: 0.9;
+        }
+        
+        .tool-card .btn-copy {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .tool-card .btn-copy:hover {
+            border-color: var(--accent-primary);
+        }
+        
+        .tool-card .btn.running {
+            background: var(--accent-yellow);
+            color: var(--bg-primary);
+        }
+        
+        .bulk-actions {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .bulk-actions h3 {
+            margin: 0 0 15px 0;
+        }
+        
+        .bulk-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .bulk-btn {
+            padding: 12px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .bulk-btn:hover {
+            border-color: var(--accent-primary);
+            background: rgba(88, 166, 255, 0.1);
+        }
+        
+        .bulk-btn.primary {
+            background: var(--accent-green);
+            color: var(--bg-primary);
+            border-color: var(--accent-green);
+        }
+        
+        .status-toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--accent-green);
+            color: var(--bg-primary);
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .status-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .dir-config {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .dir-config label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .dir-config input {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-family: 'Cascadia Code', monospace;
+            width: 250px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🛠️ Tool Installer</h1>
+            <nav>
+                <a href="index.html">Home</a>
+                <a href="quickcmds.html">⚡ Quick Cmds</a>
+                <a href="reverse_shells.html">Shells</a>
+                <a href="enumeration.html">Enumeration</a>
+                <a href="privesc_linux.html">Linux PrivEsc</a>
+                <a href="privesc_windows.html">Windows PrivEsc</a>
+                <a href="buffer_overflow.html">Buffer Overflow</a>
+                <a href="transfer_files.html">File Transfer</a>
+                <a href="pivoting.html">Pivoting</a>
+                <a href="checklist.html">Checklist</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="installer-header">
+            <h2>🚀 OSCP Tool Installer</h2>
+            <p>One-click install for essential OSCP tools. Connect to your tmux session and click to download!</p>
+        </div>
+
+        <div class="terminal-toggle-bar" id="terminal-mode-box">
+            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="terminal-mode-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="terminal-status" id="terminal-status">Clipboard mode</span>
+                <div class="dir-config">
+                    <label>📁 Tools Directory:</label>
+                    <input type="text" id="tools-dir" value="/opt/tools" placeholder="/opt/tools">
+                </div>
+            </div>
+            <p id="active-info" style="display: none; margin: 10px 0 0 0; font-size: 0.85rem; color: var(--accent-cyan);">
+                → Commands go to active tmux window (auto-creates root shell if needed)
+            </p>
+        </div>
+
+        <div class="bulk-actions">
+            <h3>⚡ Quick Install Bundles</h3>
+            <div class="bulk-btns">
+                <button class="bulk-btn primary" onclick="installBundle('essential')">📦 Essential Tools</button>
+                <button class="bulk-btn" onclick="installBundle('enumeration')">🔍 Enumeration Pack</button>
+                <button class="bulk-btn" onclick="installBundle('privesc')">⬆️ PrivEsc Pack</button>
+                <button class="bulk-btn" onclick="installBundle('pivoting')">🔀 Pivoting Pack</button>
+                <button class="bulk-btn" onclick="installBundle('wordlists')">📝 Wordlists</button>
+                <button class="bulk-btn" onclick="runCmd('sudo apt update && sudo apt upgrade -y')">🔄 Update Kali</button>
+            </div>
+        </div>
+
+        <!-- ENUMERATION TOOLS -->
+        <div class="tool-section">
+            <h3>🔍 Enumeration Tools</h3>
+            <div class="tool-grid">
+                <div class="tool-card" data-tool="linpeas">
+                    <h4>LinPEAS <span class="badge">Essential</span></h4>
+                    <p>Linux privilege escalation enumeration script</p>
+                    <div class="cmd-preview">wget https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('linpeas')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('linpeas')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="winpeas">
+                    <h4>WinPEAS <span class="badge">Essential</span></h4>
+                    <p>Windows privilege escalation enumeration</p>
+                    <div class="cmd-preview">wget https://github.com/peass-ng/PEASS-ng/releases/latest/download/winPEASx64.exe</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('winpeas')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('winpeas')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="pspy">
+                    <h4>pspy</h4>
+                    <p>Monitor Linux processes without root</p>
+                    <div class="cmd-preview">wget https://github.com/DominicBreuker/pspy/releases/latest/download/pspy64</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('pspy')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('pspy')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="linenum">
+                    <h4>LinEnum</h4>
+                    <p>Linux enumeration script</p>
+                    <div class="cmd-preview">wget https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('linenum')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('linenum')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="lse">
+                    <h4>linux-smart-enumeration</h4>
+                    <p>Another great Linux enum script</p>
+                    <div class="cmd-preview">wget https://raw.githubusercontent.com/diego-treitos/linux-smart-enumeration/master/lse.sh</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('lse')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('lse')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="seatbelt">
+                    <h4>Seatbelt</h4>
+                    <p>Windows security enumeration</p>
+                    <div class="cmd-preview">wget https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/raw/master/Seatbelt.exe</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('seatbelt')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('seatbelt')">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRIVESC TOOLS -->
+        <div class="tool-section">
+            <h3>⬆️ Privilege Escalation</h3>
+            <div class="tool-grid">
+                <div class="tool-card" data-tool="printspoofer">
+                    <h4>PrintSpoofer <span class="badge">Essential</span></h4>
+                    <p>Windows potato attack (SeImpersonate)</p>
+                    <div class="cmd-preview">wget https://github.com/itm4n/PrintSpoofer/releases/latest/download/PrintSpoofer64.exe</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('printspoofer')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('printspoofer')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="godpotato">
+                    <h4>GodPotato</h4>
+                    <p>Universal Windows potato</p>
+                    <div class="cmd-preview">wget https://github.com/BeichenDream/GodPotato/releases/latest/download/GodPotato-NET4.exe</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('godpotato')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('godpotato')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="powerup">
+                    <h4>PowerUp</h4>
+                    <p>Windows PowerShell privesc</p>
+                    <div class="cmd-preview">wget https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/master/Privesc/PowerUp.ps1</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('powerup')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('powerup')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="juicypotato">
+                    <h4>JuicyPotato</h4>
+                    <p>Windows 7-10 potato</p>
+                    <div class="cmd-preview">wget https://github.com/ohpe/juicy-potato/releases/latest/download/JuicyPotato.exe</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('juicypotato')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('juicypotato')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="rubeus">
+                    <h4>Rubeus</h4>
+                    <p>Kerberos abuse toolkit</p>
+                    <div class="cmd-preview">wget https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/raw/master/Rubeus.exe</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('rubeus')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('rubeus')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="sharpgpoabuse">
+                    <h4>SharpGPOAbuse</h4>
+                    <p>GPO abuse tool</p>
+                    <div class="cmd-preview">wget https://github.com/byronkg/SharpGPOAbuse/releases/latest/download/SharpGPOAbuse.exe</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('sharpgpoabuse')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('sharpgpoabuse')">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PIVOTING TOOLS -->
+        <div class="tool-section">
+            <h3>🔀 Pivoting & Tunneling</h3>
+            <div class="tool-grid">
+                <div class="tool-card" data-tool="chisel">
+                    <h4>Chisel <span class="badge">Essential</span></h4>
+                    <p>TCP/UDP tunnel over HTTP</p>
+                    <div class="cmd-preview">wget https://github.com/jpillora/chisel/releases/latest/download/chisel_linux_amd64.gz && gunzip chisel_linux_amd64.gz && chmod +x chisel_linux_amd64</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('chisel')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('chisel')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="chisel-win">
+                    <h4>Chisel (Windows)</h4>
+                    <p>Windows version</p>
+                    <div class="cmd-preview">wget https://github.com/jpillora/chisel/releases/latest/download/chisel_windows_amd64.gz</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('chisel-win')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('chisel-win')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="ligolo">
+                    <h4>Ligolo-ng</h4>
+                    <p>Advanced tunneling tool</p>
+                    <div class="cmd-preview">wget https://github.com/nicocha30/ligolo-ng/releases/latest/download/ligolo-ng_proxy_Linux_64bit.tar.gz</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('ligolo')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('ligolo')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="socat">
+                    <h4>Socat (Static)</h4>
+                    <p>Static socat binary</p>
+                    <div class="cmd-preview">wget https://github.com/andrew-d/static-binaries/raw/master/binaries/linux/x86_64/socat</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('socat')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('socat')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="ncat">
+                    <h4>Ncat (Static)</h4>
+                    <p>Static netcat with SSL</p>
+                    <div class="cmd-preview">wget https://github.com/andrew-d/static-binaries/raw/master/binaries/linux/x86_64/ncat</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('ncat')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('ncat')">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WINDOWS TOOLS -->
+        <div class="tool-section">
+            <h3>🪟 Windows Binaries</h3>
+            <div class="tool-grid">
+                <div class="tool-card" data-tool="nc-win">
+                    <h4>Netcat (Windows) <span class="badge">Essential</span></h4>
+                    <p>nc.exe for Windows shells</p>
+                    <div class="cmd-preview">wget https://github.com/int0x33/nc.exe/raw/master/nc64.exe -O nc.exe</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('nc-win')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('nc-win')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="accesschk">
+                    <h4>AccessChk</h4>
+                    <p>Sysinternals access checker</p>
+                    <div class="cmd-preview">wget https://download.sysinternals.com/files/AccessChk.zip && unzip AccessChk.zip</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('accesschk')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('accesschk')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="psexec">
+                    <h4>PsExec</h4>
+                    <p>Sysinternals remote exec</p>
+                    <div class="cmd-preview">wget https://download.sysinternals.com/files/PSTools.zip && unzip PSTools.zip</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('psexec')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('psexec')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="procmon">
+                    <h4>Process Monitor</h4>
+                    <p>Sysinternals process monitor</p>
+                    <div class="cmd-preview">wget https://download.sysinternals.com/files/ProcessMonitor.zip && unzip ProcessMonitor.zip</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('procmon')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('procmon')">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WORDLISTS -->
+        <div class="tool-section">
+            <h3>📝 Wordlists</h3>
+            <div class="tool-grid">
+                <div class="tool-card" data-tool="seclists">
+                    <h4>SecLists <span class="badge">Essential</span></h4>
+                    <p>Collection of security wordlists</p>
+                    <div class="cmd-preview">sudo apt install seclists -y</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('seclists')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('seclists')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="rockyou">
+                    <h4>RockYou</h4>
+                    <p>Extract rockyou wordlist</p>
+                    <div class="cmd-preview">sudo gunzip /usr/share/wordlists/rockyou.txt.gz</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('rockyou')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('rockyou')">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- APT PACKAGES -->
+        <div class="tool-section">
+            <h3>📦 APT Packages</h3>
+            <div class="tool-grid">
+                <div class="tool-card" data-tool="feroxbuster">
+                    <h4>Feroxbuster</h4>
+                    <p>Fast web content discovery</p>
+                    <div class="cmd-preview">sudo apt install feroxbuster -y</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('feroxbuster')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('feroxbuster')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="gobuster">
+                    <h4>Gobuster</h4>
+                    <p>Directory/DNS brute-forcer</p>
+                    <div class="cmd-preview">sudo apt install gobuster -y</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('gobuster')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('gobuster')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="evil-winrm">
+                    <h4>Evil-WinRM</h4>
+                    <p>WinRM shell for pentesting</p>
+                    <div class="cmd-preview">sudo gem install evil-winrm</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('evil-winrm')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('evil-winrm')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="rlwrap">
+                    <h4>rlwrap</h4>
+                    <p>Readline wrapper for nc</p>
+                    <div class="cmd-preview">sudo apt install rlwrap -y</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('rlwrap')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('rlwrap')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="bloodhound">
+                    <h4>BloodHound</h4>
+                    <p>AD attack path analysis</p>
+                    <div class="cmd-preview">sudo apt install bloodhound -y</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('bloodhound')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('bloodhound')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="crackmapexec">
+                    <h4>CrackMapExec</h4>
+                    <p>Network pentesting toolkit</p>
+                    <div class="cmd-preview">sudo apt install crackmapexec -y</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('crackmapexec')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('crackmapexec')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="impacket">
+                    <h4>Impacket</h4>
+                    <p>Python network protocols</p>
+                    <div class="cmd-preview">sudo apt install python3-impacket impacket-scripts -y</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('impacket')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('impacket')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="rustscan">
+                    <h4>RustScan</h4>
+                    <p>Fast port scanner</p>
+                    <div class="cmd-preview">wget https://github.com/RustScan/RustScan/releases/latest/download/rustscan_2.1.1_amd64.deb && sudo dpkg -i rustscan_2.1.1_amd64.deb</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('rustscan')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('rustscan')">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PIMPMYKALI -->
+        <div class="tool-section">
+            <h3>🎨 Full Setup Scripts</h3>
+            <div class="tool-grid">
+                <div class="tool-card" data-tool="pimpmykali">
+                    <h4>PimpMyKali</h4>
+                    <p>Full Kali setup & fixes</p>
+                    <div class="cmd-preview">cd /opt && sudo git clone https://github.com/Dewalt-arch/pimpmykali.git && cd pimpmykali && sudo ./pimpmykali.sh</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('pimpmykali')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('pimpmykali')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="tool-card" data-tool="autorecon">
+                    <h4>AutoRecon</h4>
+                    <p>Multi-threaded recon tool</p>
+                    <div class="cmd-preview">sudo apt install python3-pip -y && pip3 install git+https://github.com/Tib3rius/AutoRecon.git</div>
+                    <div class="actions">
+                        <button class="btn btn-install" onclick="installTool('autorecon')">Install</button>
+                        <button class="btn btn-copy" onclick="copyTool('autorecon')">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>OSCP Toolkit | Good luck on your exam! 🎯</p>
+        </footer>
+    </div>
+
+    <div class="status-toast" id="toast">Command sent!</div>
+
+    <script>
+        const CMD_SERVER = 'http://localhost:9999';
+        
+        const TOOLS = {
+            // Enumeration
+            linpeas: 'wget -q https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh -O linpeas.sh && chmod +x linpeas.sh',
+            winpeas: 'wget -q https://github.com/peass-ng/PEASS-ng/releases/latest/download/winPEASx64.exe -O winPEASx64.exe',
+            pspy: 'wget -q https://github.com/DominicBreuker/pspy/releases/download/v1.2.1/pspy64 -O pspy64 && chmod +x pspy64',
+            linenum: 'wget -q https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh -O LinEnum.sh && chmod +x LinEnum.sh',
+            lse: 'wget -q https://raw.githubusercontent.com/diego-treitos/linux-smart-enumeration/master/lse.sh -O lse.sh && chmod +x lse.sh',
+            seatbelt: 'wget -q https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/raw/master/Seatbelt.exe -O Seatbelt.exe',
+            
+            // PrivEsc
+            printspoofer: 'wget -q https://github.com/itm4n/PrintSpoofer/releases/download/v1.0/PrintSpoofer64.exe -O PrintSpoofer64.exe',
+            godpotato: 'wget -q https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET4.exe -O GodPotato-NET4.exe',
+            powerup: 'wget -q https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/master/Privesc/PowerUp.ps1 -O PowerUp.ps1',
+            juicypotato: 'wget -q https://github.com/ohpe/juicy-potato/releases/download/v0.1/JuicyPotato.exe -O JuicyPotato.exe',
+            rubeus: 'wget -q https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/raw/master/Rubeus.exe -O Rubeus.exe',
+            sharpgpoabuse: 'wget -q https://github.com/byronkg/SharpGPOAbuse/releases/download/1.0/SharpGPOAbuse.exe -O SharpGPOAbuse.exe',
+            
+            // Pivoting
+            chisel: 'wget -q https://github.com/jpillora/chisel/releases/download/v1.9.1/chisel_1.9.1_linux_amd64.gz -O chisel.gz && gunzip -f chisel.gz && chmod +x chisel',
+            'chisel-win': 'wget -q https://github.com/jpillora/chisel/releases/download/v1.9.1/chisel_1.9.1_windows_amd64.gz -O chisel_windows.gz && gunzip -f chisel_windows.gz',
+            ligolo: 'wget -q https://github.com/nicocha30/ligolo-ng/releases/download/v0.6.2/ligolo-ng_proxy_0.6.2_linux_amd64.tar.gz -O ligolo.tar.gz && tar xzf ligolo.tar.gz',
+            socat: 'wget -q https://github.com/andrew-d/static-binaries/raw/master/binaries/linux/x86_64/socat -O socat && chmod +x socat',
+            ncat: 'wget -q https://github.com/andrew-d/static-binaries/raw/master/binaries/linux/x86_64/ncat -O ncat && chmod +x ncat',
+            
+            // Windows
+            'nc-win': 'wget -q https://github.com/int0x33/nc.exe/raw/master/nc64.exe -O nc.exe',
+            accesschk: 'wget -q https://download.sysinternals.com/files/AccessChk.zip -O AccessChk.zip && unzip -o AccessChk.zip',
+            psexec: 'wget -q https://download.sysinternals.com/files/PSTools.zip -O PSTools.zip && unzip -o PSTools.zip',
+            procmon: 'wget -q https://download.sysinternals.com/files/ProcessMonitor.zip -O ProcessMonitor.zip && unzip -o ProcessMonitor.zip',
+            
+            // Wordlists
+            seclists: 'sudo apt install seclists -y',
+            rockyou: 'sudo gunzip -k /usr/share/wordlists/rockyou.txt.gz 2>/dev/null || echo "Already extracted"',
+            
+            // APT
+            feroxbuster: 'sudo apt install feroxbuster -y',
+            gobuster: 'sudo apt install gobuster -y',
+            'evil-winrm': 'sudo gem install evil-winrm',
+            rlwrap: 'sudo apt install rlwrap -y',
+            bloodhound: 'sudo apt install bloodhound -y',
+            crackmapexec: 'sudo apt install crackmapexec -y',
+            impacket: 'sudo apt install python3-impacket impacket-scripts -y',
+            rustscan: 'wget -q https://github.com/RustScan/RustScan/releases/download/2.1.1/rustscan_2.1.1_amd64.deb -O rustscan.deb && sudo dpkg -i rustscan.deb',
+            
+            // Full scripts
+            pimpmykali: 'cd /opt && sudo rm -rf pimpmykali && sudo git clone https://github.com/Dewalt-arch/pimpmykali.git && cd pimpmykali && sudo ./pimpmykali.sh',
+            autorecon: 'pip3 install git+https://github.com/Tib3rius/AutoRecon.git'
+        };
+
+        const BUNDLES = {
+            essential: ['linpeas', 'winpeas', 'chisel', 'nc-win', 'printspoofer', 'seclists', 'rlwrap', 'rockyou'],
+            enumeration: ['linpeas', 'winpeas', 'pspy', 'linenum', 'lse', 'seatbelt'],
+            privesc: ['linpeas', 'winpeas', 'printspoofer', 'godpotato', 'powerup', 'juicypotato'],
+            pivoting: ['chisel', 'chisel-win', 'ligolo', 'socat', 'ncat'],
+            wordlists: ['seclists', 'rockyou']
+        };
+
+        // Load saved state
+        document.getElementById('terminal-mode-toggle').checked = localStorage.getItem('terminal-mode') === 'true';
+        document.getElementById('tools-dir').value = localStorage.getItem('tools-dir') || '/opt/tools';
+        updateTerminalModeUI();
+
+        document.getElementById('terminal-mode-toggle').addEventListener('change', (e) => {
+            localStorage.setItem('terminal-mode', e.target.checked);
+            updateTerminalModeUI();
+            if (e.target.checked) testTerminalConnection();
+        });
+
+        document.getElementById('tools-dir').addEventListener('change', (e) => {
+            localStorage.setItem('tools-dir', e.target.value);
+        });
+
+        function updateTerminalModeUI() {
+            const isTerminalMode = document.getElementById('terminal-mode-toggle').checked;
+            const box = document.getElementById('terminal-mode-box');
+            const status = document.getElementById('terminal-status');
+            const activeInfo = document.getElementById('active-info');
+            
+            if (isTerminalMode) {
+                box.classList.add('active');
+                status.textContent = 'Testing connection...';
+                activeInfo.style.display = 'block';
+            } else {
+                box.classList.remove('active');
+                status.textContent = 'Clipboard mode';
+                activeInfo.style.display = 'none';
+            }
+        }
+
+        async function testTerminalConnection() {
+            const status = document.getElementById('terminal-status');
+            try {
+                const response = await fetch(CMD_SERVER, { method: 'OPTIONS' });
+                if (response.ok) {
+                    status.textContent = '✓ Connected to terminal';
+                    status.className = 'terminal-status connected';
+                }
+            } catch (e) {
+                status.textContent = '✗ Server not running';
+                status.className = 'terminal-status error';
+            }
+        }
+
+        async function sendToTerminal(cmd, execute = true) {
+            try {
+                const response = await fetch(CMD_SERVER, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cmd, execute })
+                });
+                return (await response.json()).status === 'ok';
+            } catch (e) {
+                showToast('Server not running!');
+                return false;
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        async function runCmd(cmd) {
+            const isTerminalMode = document.getElementById('terminal-mode-toggle').checked;
+            
+            if (isTerminalMode) {
+                if (await sendToTerminal(cmd)) {
+                    showToast('Command sent!');
+                }
+            } else {
+                navigator.clipboard.writeText(cmd);
+                showToast('Copied to clipboard!');
+            }
+        }
+
+        async function installTool(tool) {
+            const toolsDir = document.getElementById('tools-dir').value;
+            const cmd = `mkdir -p ${toolsDir} && cd ${toolsDir} && ${TOOLS[tool]}`;
+            await runCmd(cmd);
+        }
+
+        function copyTool(tool) {
+            const toolsDir = document.getElementById('tools-dir').value;
+            const cmd = `mkdir -p ${toolsDir} && cd ${toolsDir} && ${TOOLS[tool]}`;
+            navigator.clipboard.writeText(cmd);
+            showToast('Copied!');
+        }
+
+        async function installBundle(bundle) {
+            const tools = BUNDLES[bundle];
+            const toolsDir = document.getElementById('tools-dir').value;
+            const isTerminalMode = document.getElementById('terminal-mode-toggle').checked;
+            
+            if (isTerminalMode) {
+                // Create directory first
+                await sendToTerminal(`mkdir -p ${toolsDir} && cd ${toolsDir}`);
+                
+                // Install each tool
+                for (const tool of tools) {
+                    showToast(`Installing ${tool}...`);
+                    await sendToTerminal(TOOLS[tool]);
+                    await new Promise(r => setTimeout(r, 500)); // Small delay
+                }
+                showToast(`${bundle} bundle complete!`);
+            } else {
+                // Copy all commands
+                const cmds = tools.map(t => TOOLS[t]).join(' && ');
+                const fullCmd = `mkdir -p ${toolsDir} && cd ${toolsDir} && ${cmds}`;
+                navigator.clipboard.writeText(fullCmd);
+                showToast('Bundle commands copied!');
+            }
+        }
+
+        // Test connection on load
+        if (document.getElementById('terminal-mode-toggle').checked) {
+            testTerminalConnection();
+        }
+    </script>
+</body>
+</html>
+
+

