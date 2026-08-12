@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=OSCP Toolkit
+Comment=Launch OSCP Toolkit with tmux, command server, and browser
+Exec=/bin/bash -c "~/OSCP-Toolkit/01-Scripts/bash/launch_oscp.sh"
+Icon=utilities-terminal
+Terminal=false
+Type=Application
+Categories=Development;Security;
+StartupNotify=true
+

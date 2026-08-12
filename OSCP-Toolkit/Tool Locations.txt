@@ -1,0 +1,6 @@
+Tool locations:
+  Linux enumeration: 02-Enumeration/linux/
+  Windows enumeration: 02-Enumeration/windows/
+  Windows exploits: 06-Exploits/windows_lpe/
+  Chisel: 08-Pivoting/chisel/
+  Wordlists: 03-Wordlists/
